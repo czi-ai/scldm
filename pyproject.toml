@@ -24,8 +24,14 @@ classifiers = [
 ]
 dependencies = [
   "anndata",
+  "einops",
+  "numpy",
+  "pandas",
+  "rich",
+  "scvi-tools>=1.2",
   # for debug logging (referenced from the issue template)
   "session-info2",
+  "torch>=2.5",
 ]
 optional-dependencies.dev = [
   "pre-commit",
@@ -108,22 +114,26 @@ lint.select = [
 ]
 lint.ignore = [
   "B008", # Errors from function calls in argument defaults. These are fine when the result is immutable.
+  # docs stuff
   "D100", # Missing docstring in public module
+  "D101", # Missing docstring in public class
+  "D102", # Missing docstring in public function
+  "D103", # Missing docstring in public method
   "D104", # Missing docstring in public package
   "D105", # __magic__ methods are often self-explanatory, allow missing docstrings
   "D107", # Missing docstring in __init__
   # Disable one in each pair of mutually incompatible rules
-  "D203", # We don’t want a blank line before a class docstring
+  "D203", # We don't want a blank line before a class docstring
   "D213", # <> We want docstrings to start immediately after the opening triple quote
-  "D400", # first line should end with a period [Bug: doesn’t work with single-line docstrings]
+  "D400", # first line should end with a period [Bug: doesn't work with single-line docstrings]
   "D401", # First line should be in imperative mood; try rephrasing
   "E501", # line too long -> we accept long comment lines; formatter gets rid of long code lines
   "E731", # Do not assign a lambda expression, use a def -> lambda expression assignments are convenient
   "E741", # allow I, O, l as variable names -> I is the identity matrix
 ]
 lint.per-file-ignores."*/__init__.py" = [ "F401" ]
-lint.per-file-ignores."docs/*" = [ "I" ]
-lint.per-file-ignores."tests/*" = [ "D" ]
+lint.per-file-ignores."notebooks/*" = [ "B", "C4", "D", "E" ]
+lint.per-file-ignores."tests/*" = [ "D", "F" ]
 lint.pydocstyle.convention = "numpy"
 
 [tool.pytest.ini_options]
