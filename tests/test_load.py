@@ -1,29 +1,12 @@
-import pickle
-import types
 from pathlib import Path
 
 import hydra
-import pytest
 import torch
-from hydra.core.hydra_config import HydraConfig
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 
-import scldm
+from scldm._utils import remap_pickle
 
 CHECKPOINTS_PATH = Path("/Users/gpalla/Datasets/scg_vae/vae_census")
-
-
-class RemapUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
-        if module.startswith("scg_vae"):
-            module = module.replace("scg_vae", "scldm")
-        return super().find_class(module, name)
-
-
-remap_pickle = types.ModuleType("remap_pickle")
-remap_pickle.Unpickler = RemapUnpickler
-remap_pickle.load = pickle.load
-remap_pickle.dump = pickle.dump
 
 
 def load_checkpoint_weights(module, checkpoint_state_dict):

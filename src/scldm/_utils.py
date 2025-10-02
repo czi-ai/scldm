@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import pickle
 from pathlib import Path
 
 import pytorch_lightning as pl
@@ -200,3 +201,24 @@ def get_inducing_points(n_inducing_points: int):
 def get_n_embed_inducing_points(n_embed: int, n_inducing_points: int):
     n_embed_list = [n_embed * (2**i) for i in range(len(n_inducing_points) + 1)]
     return n_embed_list
+
+
+class RemapUnpickler(pickle.Unpickler):
+    """Unpickler that remaps scg_vae module names to scldm."""
+
+    def find_class(self, module, name):
+        if module.startswith("scg_vae"):
+            module = module.replace("scg_vae", "scldm")
+        return super().find_class(module, name)
+
+
+class RemapPickle:
+    """Pickle-compatible module for remapping scg_vae to scldm during unpickling."""
+
+    __name__ = "remap_pickle"
+    Unpickler = RemapUnpickler
+    load = staticmethod(pickle.load)
+    dump = staticmethod(pickle.dump)
+
+
+remap_pickle = RemapPickle()
