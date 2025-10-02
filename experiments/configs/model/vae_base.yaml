@@ -1,0 +1,115 @@
+
+module:
+  _target_: scg_vae.models.VAE
+  vae_model:
+    _target_: scg_vae.vae.TransformerVAE
+    encoder:
+      _target_: scg_vae.nnets.Encoder
+      n_layer: 8
+      n_inducing_points: 16
+      n_embed: 32
+      n_embed_latent: 16
+      n_head: 8
+      n_head_cross: 4
+      dropout: 0.0
+      bias: false
+      multiple_of: 4
+      layernorm_eps: 1e-8
+      norm_layer: layernorm
+      positional_encoding: true
+    decoder:
+      _target_: scg_vae.nnets.Decoder
+      n_genes: ${datamodule.label_encoder.n_genes}
+      n_embed: ${model.module.vae_model.encoder.n_embed}
+      n_embed_latent: ${model.module.vae_model.encoder.n_embed_latent}
+      n_head: ${model.module.vae_model.encoder.n_head}
+      n_head_cross: ${model.module.vae_model.encoder.n_head_cross}
+      n_layer: ${model.module.vae_model.encoder.n_layer}
+      n_inducing_points: ${model.module.vae_model.encoder.n_inducing_points}
+      dropout: ${model.module.vae_model.encoder.dropout}
+      bias: ${model.module.vae_model.encoder.bias}
+      multiple_of: ${model.module.vae_model.encoder.multiple_of}
+      layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
+      norm_layer: ${model.module.vae_model.encoder.norm_layer}
+      shared_embedding: true
+      use_adaln: false
+    input_layer:
+      _target_: scg_vae.layers.InputTransformerVAE
+      n_genes: ${datamodule.label_encoder.n_genes}
+      n_embed: ${model.module.vae_model.encoder.n_embed}
+      agg_func: log1p
+    decoder_head: ${model.decoder_head.${model.decoder_name}}
+  vae_scheduler:
+    _target_: scg_vae._utils.wsd_schedule
+    num_training_steps: ${training.trainer.max_steps}
+    final_lr_factor: 0.1
+    num_warmup_steps: null
+    init_div_factor: 100
+    fract_decay: 0.1 # for cosine is 1.0
+    decay_type: sqrt # cosine
+    # num_training_steps: ${training.trainer.max_steps} # params for sqrt decay
+    # final_lr_factor: 0.1
+    # num_warmup_steps: null
+    # init_div_factor: 100
+    # fract_decay: 0.1
+    # decay_type: sqrt
+  vae_optimizer:
+    _target_: scg_vae.optimizers.AdamWLegacy
+    _partial_: true
+    lr: 1e-3
+    weight_decay: 0.0
+    betas: [0.9, 0.95]
+    caution: false
+
+decoder_name: negative_binomial_shared_theta
+
+decoder_head:
+  negative_binomial_shared_theta:
+    _target_: scg_vae.stochastic_layers.NegativeBinomialTransformerLayer
+    n_genes: ${datamodule.label_encoder.n_genes}
+    shared_theta: true
+    n_embed: ${model.module.vae_model.encoder.n_embed}
+    norm_layer: ${model.module.vae_model.encoder.norm_layer}
+    layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
+  negative_binomial_unshared_theta:
+    _target_: scg_vae.stochastic_layers.NegativeBinomialTransformerLayer
+    n_genes: ${datamodule.label_encoder.n_genes}
+    shared_theta: false
+    n_embed: ${model.module.vae_model.encoder.n_embed}
+    norm_layer: ${model.module.vae_model.encoder.norm_layer}
+    layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
+  discretized_gaussian:
+    _target_: scg_vae.stochastic_layers.TruncatedDiscretizedGaussianTransformerLayer
+    n_embed: ${model.module.vae_model.encoder.n_embed}
+    norm_layer: ${model.module.vae_model.encoder.norm_layer}
+    layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
+  discretized_logistic:
+    _target_: scg_vae.stochastic_layers.TruncatedDiscretizedLogisticTransformerLayer
+    n_embed: ${model.module.vae_model.encoder.n_embed}
+    norm_layer: ${model.module.vae_model.encoder.norm_layer}
+    layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
+  poisson:
+    _target_: scg_vae.stochastic_layers.PossionTransformerLayer
+    n_genes: ${datamodule.label_encoder.n_genes}
+    n_embed: ${model.module.vae_model.encoder.n_embed}
+    norm_layer: ${model.module.vae_model.encoder.norm_layer}
+    layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
+
+batch_size: 128
+test_batch_size: 256
+
+# see https://github.com/Dao-AILab/flash-attention/issues/741
+# flops_flash_attention: ${eval:'4 * ${model.transformer.seq_len}**2 * ${model.transformer.n_head} * ${model.transformer.n_embed}'}
+num_parameters: null
+flops: null
+
+get_flops:
+  _target_: scg_vae.flops.get_flops
+  seq_len: ${model.module.vae_model.input_layer.n_genes}
+  vocab_size: ${model.module.vae_model.input_layer.n_genes}
+  num_heads: ${model.module.vae_model.encoder.n_head}
+  swiglu: false
+  n_layers: ${eval:'${model.module.vae_model.encoder.n_layer}*2'}
+  d_model: ${model.module.vae_model.encoder.n_embed}
+  key_size: ${model.module.vae_model.encoder.n_embed}
+  ffw_size: ${eval:'${model.module.vae_model.encoder.n_embed} * ${model.module.vae_model.encoder.multiple_of}'}

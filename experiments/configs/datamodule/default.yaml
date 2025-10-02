@@ -1,0 +1,192 @@
+datamodule:
+  _target_: scg_vae.datamodule.SimplifiedDataModule
+  train_adata_path: ${datamodule.dataset_params.${datamodule.dataset}.adata_train}
+  test_adata_path: ${datamodule.dataset_params.${datamodule.dataset}.adata_test}
+  adata_attr: ${datamodule.dataset_params.${datamodule.dataset}.adata_attr}
+  adata_key: ${datamodule.dataset_params.${datamodule.dataset}.adata_key}
+  vocabulary_encoder: ${datamodule.label_encoder}
+  batch_size: ${model.batch_size}
+  test_batch_size: ${model.test_batch_size}
+  num_workers:  16
+  seed: ${seed}
+  prefetch_factor: 8
+  persistent_workers: true
+  drop_last_indices: true
+  drop_incomplete_batch: true
+  sample_genes: none
+  genes_seq_len: ${datamodule.dataset_params.${datamodule.dataset}.genes_seq_len}
+  val_as_test: false
+
+label_encoder:
+  _target_: scg_vae.encoder.VocabularyEncoderSimplified
+  adata_path: ${datamodule.dataset_params.${datamodule.dataset}.adata_train}
+  mask_token: "<MASK>"
+  mask_token_idx: 0
+  n_genes: ${datamodule.dataset_params.${datamodule.dataset}.n_genes}
+  class_vocab_sizes: ${datamodule.dataset_params.${datamodule.dataset}.class_vocab_sizes}
+  guidance_weight: ${datamodule.dataset_params.${datamodule.dataset}.guidance_weight}
+  mu_size_factor: ${datamodule.dataset_params.${datamodule.dataset}.mu_size_factor}
+  sd_size_factor: ${datamodule.dataset_params.${datamodule.dataset}.sd_size_factor}
+  condition_strategy: ${datamodule.dataset_params.${datamodule.dataset}.condition_strategy}
+
+dataset: null
+
+base_data_path: /mnt/czi-sci-ai/project-scg-llm-pvc/data/generation/datasets
+
+dataset_params:
+  hlca:
+    adata_train: ${datamodule.base_data_path}/hlca_train_sharded/adata_0.h5ad
+    adata_test: ${datamodule.base_data_path}/hlca_test_sharded/adata_0.h5ad
+    n_genes: 27997
+    class_vocab_sizes:
+      cell_type: 50
+    guidance_weight:
+      cell_type: 1.0
+    genes_seq_len: 10186
+    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/hlca_log_size_factor_mu.pkl
+    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/hlca_log_size_factor_sd.pkl
+    adata_attr: layers
+    adata_key: X_counts
+    condition_strategy: "mutually_exclusive"
+  dentate_gyrus:
+    adata_train: ${datamodule.base_data_path}/dentategyrus/dentategyrus_train.h5ad
+    adata_test: ${datamodule.base_data_path}/dentategyrus/dentategyrus_test.h5ad
+    n_genes: 17002
+    class_vocab_sizes:
+      clusters: 14
+    guidance_weight:
+      clusters: 1.0
+    genes_seq_len: 6147
+    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/dentate_gyrus_log_size_factor_mu.pkl
+    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/dentate_gyrus_log_size_factor_sd.pkl
+    adata_attr: layers
+    adata_key: X_counts
+    condition_strategy: "mutually_exclusive"
+
+  czb_test:
+    adata_train: ${datamodule.base_data_path}/czb_test/Parse_10M_subsample_train.h5ad
+    adata_test: ${datamodule.base_data_path}/czb_test/Parse_10M_subsample_test.h5ad
+    n_genes: 40352
+    class_vocab_sizes:
+      cell_type: 18
+    guidance_weight:
+      cell_type: 1.0
+    adata_attr: X
+    adata_key: null
+    condition_strategy: "joint"
+
+  czb_parse_hvg:
+    adata_train: ${datamodule.base_data_path}/czb_data/parse_10m_hvg/Parse_10M_PBMC_STATE_HVG_largest_donor_train.h5ad
+    adata_test: ${datamodule.base_data_path}/czb_data/parse_10m_hvg/Parse_10M_PBMC_STATE_HVG_largest_donor_test.h5ad
+    n_genes: 2000
+    class_vocab_sizes:
+      cell_type: 18
+      cytokine: 91
+    guidance_weight:
+      cell_type: 1.0
+      cytokine: 1.0
+    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/parse_10m_hvg/czb_parse_hvg_log_size_factor_mu.pkl
+    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/parse_10m_hvg/czb_parse_hvg_log_size_factor_sd.pkl
+    genes_seq_len: 2000
+    adata_attr: X
+    adata_key: null
+    condition_strategy: "joint"
+
+  czb_cd4_naive_holdout:
+    adata_train: ${datamodule.base_data_path}/czb_data/CD4_Naive_holdout/train.h5ad
+    adata_test: ${datamodule.base_data_path}/czb_data/CD4_Naive_holdout/test.h5ad  #generation_hold_out.h5ad
+    n_genes: 2000
+    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/CD4_Naive_holdout/czb_cd4_naive_holdout_log_size_factor_mu.pkl
+    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/CD4_Naive_holdout/czb_cd4_naive_holdout_log_size_factor_sd.pkl
+    genes_seq_len: 2000
+    adata_attr: X
+    adata_key: null
+    class_vocab_sizes:
+      cell_type: 18
+      cytokine: 91
+    guidance_weight:
+      cell_type: 1.0
+      cytokine: 1.0
+    condition_strategy: "joint"
+
+
+  replogle:
+    adata_train: ${datamodule.base_data_path}/czb_data/Replogle_Nadig_from_STATE/processed/train_asSTATE_hvg.h5ad
+    adata_test: ${datamodule.base_data_path}/czb_data/Replogle_Nadig_from_STATE/processed/test_asSTATE_hvg.h5ad
+    n_genes: 2000
+    class_vocab_sizes:
+      cell_line: 4
+      gene: 2024
+    guidance_weight:
+      cell_line: 1.0
+      gene: 1.0
+    adata_attr: X
+    adata_key: null
+    condition_strategy: "joint"
+    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/Replogle_Nadig_from_STATE/processed/replogle_log_size_factor_mu.pkl
+    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/Replogle_Nadig_from_STATE/processed/replogle_log_size_factor_sd.pkl
+    genes_seq_len: 2000
+
+  tabula_muris:
+    # adata_train: ${datamodule.base_data_path}/tabula_muris/tabula_muris_train.h5ad
+    # adata_test: ${datamodule.base_data_path}/tabula_muris/tabula_muris_test.h5ad
+    adata_train: ${datamodule.base_data_path}/tabula_muris_train_sharded/adata_0.h5ad
+    adata_test: ${datamodule.base_data_path}/tabula_muris_test_sharded/adata_0.h5ad
+    n_genes: 19734
+    class_vocab_sizes:
+      tissue: 16
+    guidance_weight:
+      tissue: 1.0
+    genes_seq_len: 9059
+    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/tabula_muris_log_size_factor_mu.pkl
+    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/tabula_muris_log_size_factor_sd.pkl
+    adata_attr: layers
+    adata_key: X_counts
+    condition_strategy: "mutually_exclusive"
+
+  interpolation:
+    adata_train: /work/interpolation_cells.h5ad
+    adata_test: /work/interpolation_cells.h5ad
+    n_genes: 2000
+    class_vocab_sizes:
+      cell_type: 18
+      cytokine: 91
+      sample_group: 2
+    guidance_weight:
+      cell_type: 1.0
+      cytokine: 1.0
+      sample_group: 1.0
+    genes_seq_len: 2000
+    mu_size_factor: null
+    sd_size_factor: null
+    condition_strategy: "mutually_exclusive"
+  homo_sapiens:
+    adata_train: /mnt/czi-sci-ai/project-scg-llm-data-2/data/census_human_hvg/colon/train/adata_colon_0.h5ad
+    adata_test: /mnt/czi-sci-ai/project-scg-llm-data-2/data/census_human_hvg/colon/test/adata_colon_0.h5ad
+    n_genes: 36130
+    class_vocab_sizes:
+      cell_type: 50
+    guidance_weight:
+      cell_type: 1.0
+    genes_seq_len: 8000
+    mu_size_factor: null
+    sd_size_factor: null
+    adata_attr: X
+    adata_key: null
+    condition_strategy: "mutually_exclusive"
+  replogle:
+    adata_train: ${datamodule.base_data_path}/czb_data/Replogle_Nadig_from_STATE/processed/train_asSTATE_hvg.h5ad
+    adata_test: ${datamodule.base_data_path}/czb_data/Replogle_Nadig_from_STATE/processed/val_asSTATE_hvg.h5ad
+    n_genes: 2000
+    class_vocab_sizes:
+      cell_line: 4
+      gene: 2024
+    guidance_weight:
+      cell_line: 1.0
+      gene: 1.0
+    adata_attr: X
+    adata_key: null
+    condition_strategy: joint
+    genes_seq_len: 2000
+    mu_size_factor: null
+    sd_size_factor: null

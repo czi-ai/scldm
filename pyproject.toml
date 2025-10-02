@@ -24,6 +24,7 @@ classifiers = [
 ]
 dependencies = [
   "anndata",
+  "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml@main",
   "cellxgene-census==1.16.2",
   "einops",
   "ema-pytorch==0.7.7",
@@ -70,6 +71,10 @@ optional-dependencies.test = [
   "coverage>=7.10",
   "pytest",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
 # https://docs.pypi.org/project_metadata/#project-urls
 urls.Documentation = "https://scldm.readthedocs.io/"
 urls.Homepage = "https://github.com/czi-ai/scldm"
