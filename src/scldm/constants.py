@@ -7,11 +7,11 @@ class DatasetEnum(StrEnum):
     TISSUE = "tissue"
     TISSUE_GENERAL = "tissue_general"
     DONOR_ID = "donor_id"
-    ASSAY = "assay"  #
-    SUSPENSION_TYPE = "suspension_type"  #
+    ASSAY = "assay"
+    SUSPENSION_TYPE = "suspension_type"
     DATASET_ID = "dataset_id"
     NNZ = "nnz"
-    RAW_SUM = "raw_sum"  #
+    RAW_SUM = "raw_sum"
     N_MEASURED_VARS = "n_measured_vars"
     SEX = "sex"
     DISEASE = "disease"
@@ -23,8 +23,8 @@ class DatasetEnum(StrEnum):
 class ModelEnum(StrEnum):
     """Enum for model keys."""
 
-    COUNTS = "counts"  #
-    GENES = "genes"  #
+    COUNTS = "counts"
+    GENES = "genes"
     LIBRARY_SIZE = "library_size"
     GENES_SUBSET = "genes_subset"
     COUNTS_SUBSET = "counts_subset"

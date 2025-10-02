@@ -82,45 +82,31 @@ def test_load_checkpoints(checkpoints_path):
 
 @pytest.mark.requires_local_data
 def test_datamodule_load(dentategyrus_paths):
-    """Test DataModule initialization with dentategyrus dataset.
+    """Test DataModule initialization with dentategyrus dataset using Hydra config.
 
     Parameters
     ----------
     dentategyrus_paths
         Tuple of (train_path, test_path) for dentategyrus dataset
     """
-    from scldm.datamodule import DataModule
-    from scldm.encoder import VocabularyEncoderSimplified
+    from pathlib import Path
 
     train_path, test_path = dentategyrus_paths
 
     if not train_path.exists() or not test_path.exists():
         pytest.skip(f"Dentategyrus dataset not found at {train_path.parent}")
 
-    # Create vocabulary encoder
-    vocab_encoder = VocabularyEncoderSimplified(
-        adata_path=train_path,
-        n_genes=17002,
-        mask_token="<MASK>",
-        mask_token_idx=0,
-        class_vocab_sizes={"clusters": 14},
-    )
+    # Load configs
+    config_dir = Path(__file__).parent.parent / "experiments" / "configs"
+    paths_config = OmegaConf.load(config_dir / "paths" / "default.yaml")
+    datamodule_config = OmegaConf.load(config_dir / "datamodule" / "default.yaml")
 
-    # Create datamodule
-    datamodule = DataModule(
-        train_adata_path=train_path,
-        test_adata_path=test_path,
-        adata_attr="X",
-        adata_key=None,
-        vocabulary_encoder=vocab_encoder,
-        batch_size=32,
-        test_batch_size=32,
-        num_workers=0,
-        seed=42,
-        sample_genes="expressed",
-        genes_seq_len=6147,
-        val_as_test=False,
-    )
+    # Merge configs with proper structure
+    config = OmegaConf.create({"paths": paths_config, "datamodule": datamodule_config})
+
+    # Instantiate vocabulary encoder and datamodule
+    vocab_encoder = hydra.utils.instantiate(config.datamodule.vocabulary_encoder)
+    datamodule = hydra.utils.instantiate(config.datamodule.datamodule)
 
     # Setup should handle train/val split
     datamodule.setup(stage="fit")
@@ -128,7 +114,8 @@ def test_datamodule_load(dentategyrus_paths):
     assert hasattr(datamodule, "train_dataset"), "Missing train_dataset after setup"
     assert hasattr(datamodule, "val_dataset"), "Missing val_dataset after setup"
 
-    print(f"✓ DataModule created successfully")
+    print(f"✓ DataModule created successfully from config")
+    print(f"  Dataset: {config.datamodule.dataset}")
     print(f"  Train cells: {datamodule.n_cells}")
     print(f"  Has train dataset: {hasattr(datamodule, 'train_dataset')}")
     print(f"  Has val dataset: {hasattr(datamodule, 'val_dataset')}")
