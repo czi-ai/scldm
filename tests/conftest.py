@@ -4,6 +4,10 @@ import anndata as ad
 import numpy as np
 import pytest
 
+# Repository root directory (relative to this file)
+REPO_ROOT = Path(__file__).parent.parent
+CONFIG_DIR = REPO_ROOT / "experiments" / "configs"
+
 # Local data paths (only available on specific machine)
 CHECKPOINTS_PATH = Path("/Users/gpalla/Datasets/scg_vae/vae_census")
 DENTATEGYRUS_TRAIN_PATH = Path("/Users/gpalla/Datasets/scg_vae/dentategyrus/dentategyrus_train.h5ad")
@@ -25,3 +29,9 @@ def checkpoints_path():
 def dentategyrus_paths():
     """Paths to dentategyrus train/test datasets."""
     return DENTATEGYRUS_TRAIN_PATH, DENTATEGYRUS_TEST_PATH
+
+
+@pytest.fixture
+def config_dir():
+    """Path to experiments/configs directory."""
+    return CONFIG_DIR

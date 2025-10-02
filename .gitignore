@@ -23,3 +23,6 @@ __pycache__/
 # docs
 /docs/generated/
 /docs/_build/
+
+# Local notes
+SETUP_NOTES.md

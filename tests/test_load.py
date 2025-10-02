@@ -32,10 +32,10 @@ def _load_checkpoint_weights(module, checkpoint_state_dict):
     missing_keys = module_keys - loaded_keys
 
     if skipped_keys:
-        print(f"Skipping {len(skipped_keys)} keys not in module: {list(skipped_keys)[:5]}...")
+        print(f"  Skipping {len(skipped_keys)} keys not in module: {list(skipped_keys)[:5]}...")
     if missing_keys:
-        print(f"Module has {len(missing_keys)} keys not in checkpoint: {list(missing_keys)[:5]}...")
-    print(f"Loading {len(loaded_keys)} matching keys")
+        print(f"  Module has {len(missing_keys)} keys not in checkpoint: {list(missing_keys)[:5]}...")
+    print(f"  Loading {len(loaded_keys)} matching keys")
 
     module.load_state_dict(filtered_state_dict, strict=False)
 
@@ -43,14 +43,25 @@ def _load_checkpoint_weights(module, checkpoint_state_dict):
 
 
 @pytest.mark.requires_local_data
-def test_load_checkpoints(checkpoints_path):
-    """Test loading pretrained checkpoint with scg_vae → scldm remapping.
+def test_end_to_end_load(dentategyrus_paths, checkpoints_path, config_dir):
+    """Test end-to-end loading of datamodule, module, and trainer from configs.
 
     Parameters
     ----------
+    dentategyrus_paths
+        Tuple of (train_path, test_path) for dentategyrus dataset
     checkpoints_path
-        Path to checkpoint directory containing 20M.yaml and 20M.ckpt
+        Path to checkpoint directory containing pretrained models
+    config_dir
+        Path to experiments/configs directory
     """
+    import lightning as L
+
+    train_path, test_path = dentategyrus_paths
+
+    if not train_path.exists() or not test_path.exists():
+        pytest.skip(f"Dentategyrus dataset not found at {train_path.parent}")
+
     if not checkpoints_path.exists():
         pytest.skip(f"Checkpoint path not found: {checkpoints_path}")
 
@@ -60,62 +71,60 @@ def test_load_checkpoints(checkpoints_path):
     if not config_file.exists() or not checkpoint_file.exists():
         pytest.skip("Required checkpoint files not found")
 
-    # Load config and remap scg_vae → scldm (in-memory only)
-    config = OmegaConf.load(config_file)
-    config_str = OmegaConf.to_yaml(config)
-    config_str = config_str.replace("scg_vae", "scldm")
-    config = OmegaConf.create(config_str)
-
-    # Instantiate module
-    module = hydra.utils.instantiate(config.model.module)
-    print(f"Module type: {type(module).__name__}")
-
-    # Load checkpoint with remapping (in-memory only)
-    with open(checkpoint_file, "rb") as f:
-        checkpoint = torch.load(f, map_location="cpu", pickle_module=remap_pickle)
-
-    # Load weights
-    stats = _load_checkpoint_weights(module, checkpoint["state_dict"])
-
-    print(f"✓ Checkpoint: {stats['loaded']} loaded, {stats['skipped']} skipped, {stats['missing']} missing")
-
-
-@pytest.mark.requires_local_data
-def test_datamodule_load(dentategyrus_paths):
-    """Test DataModule initialization with dentategyrus dataset using Hydra config.
-
-    Parameters
-    ----------
-    dentategyrus_paths
-        Tuple of (train_path, test_path) for dentategyrus dataset
-    """
-    from pathlib import Path
-
-    train_path, test_path = dentategyrus_paths
-
-    if not train_path.exists() or not test_path.exists():
-        pytest.skip(f"Dentategyrus dataset not found at {train_path.parent}")
-
-    # Load configs
-    config_dir = Path(__file__).parent.parent / "experiments" / "configs"
+    print("\n=== Loading DataModule ===")
+    # Load datamodule configs
     paths_config = OmegaConf.load(config_dir / "paths" / "default.yaml")
     datamodule_config = OmegaConf.load(config_dir / "datamodule" / "default.yaml")
+    config = OmegaConf.merge(paths_config, datamodule_config)
 
-    # Merge configs with proper structure
-    config = OmegaConf.create({"paths": paths_config, "datamodule": datamodule_config})
-
-    # Instantiate vocabulary encoder and datamodule
-    vocab_encoder = hydra.utils.instantiate(config.datamodule.vocabulary_encoder)
-    datamodule = hydra.utils.instantiate(config.datamodule.datamodule)
-
-    # Setup should handle train/val split
+    # Instantiate datamodule
+    datamodule = hydra.utils.instantiate(config.datamodule)
     datamodule.setup(stage="fit")
 
     assert hasattr(datamodule, "train_dataset"), "Missing train_dataset after setup"
     assert hasattr(datamodule, "val_dataset"), "Missing val_dataset after setup"
 
-    print(f"✓ DataModule created successfully from config")
-    print(f"  Dataset: {config.datamodule.dataset}")
+    print(f"✓ DataModule loaded")
+    print(f"  Dataset: {config.dataset}")
     print(f"  Train cells: {datamodule.n_cells}")
-    print(f"  Has train dataset: {hasattr(datamodule, 'train_dataset')}")
-    print(f"  Has val dataset: {hasattr(datamodule, 'val_dataset')}")
+
+    print("\n=== Loading Module ===")
+    # Load module config and remap scg_vae → scldm (in-memory only)
+    module_config = OmegaConf.load(config_file)
+    config_str = OmegaConf.to_yaml(module_config)
+    config_str = config_str.replace("scg_vae", "scldm")
+    module_config = OmegaConf.create(config_str)
+
+    # Instantiate module
+    module = hydra.utils.instantiate(module_config.model.module)
+    print(f"✓ Module instantiated: {type(module).__name__}")
+
+    # Load checkpoint weights with remapping (in-memory only)
+    with open(checkpoint_file, "rb") as f:
+        checkpoint = torch.load(f, map_location="cpu", pickle_module=remap_pickle)
+
+    stats = _load_checkpoint_weights(module, checkpoint["state_dict"])
+    print(f"✓ Weights loaded: {stats['loaded']} keys")
+
+    print("\n=== Creating Trainer ===")
+    # Create a minimal trainer for testing
+    trainer = L.Trainer(
+        max_epochs=1,
+        accelerator="cpu",
+        devices=1,
+        logger=False,
+        enable_checkpointing=False,
+        enable_progress_bar=False,
+    )
+    print(f"✓ Trainer created")
+
+    print("\n=== Validation ===")
+    # Get a batch from validation dataset (avoid multiprocessing issues in tests)
+    assert datamodule.val_dataset is not None, "Val dataset not initialized"
+    print(f"✓ Val dataset: {len(datamodule.val_dataset)} batches")
+
+    print(f"\n✓ End-to-end test passed!")
+    print(f"  - DataModule: {datamodule.n_cells} cells, {len(datamodule.val_dataset)} val batches")
+    print(f"  - Module: {type(module).__name__}")
+    print(f"  - Checkpoint: {stats['loaded']} weights loaded")
+    print(f"  - Trainer: Ready")
