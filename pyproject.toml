@@ -25,14 +25,23 @@ classifiers = [
 dependencies = [
   "anndata",
   "einops",
+  "lightning==2.4",
   "numpy",
+  "omegaconf",
   "pandas",
+  "pot[backend-torch]",
+  "psutil",
+  "pybiomart",
+  "pyyaml",
   "rich",
   "scvi-tools>=1.2",
   # for debug logging (referenced from the issue template)
   "session-info2",
-  "torch>=2.5",
-  "torchdiffeq",
+  "torch==2.7",
+  "torch-optimizer",
+  "torchdyn",
+  "torchmetrics==1.6",
+  "wandb",
 ]
 optional-dependencies.dev = [
   "pre-commit",
