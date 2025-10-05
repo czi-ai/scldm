@@ -1,0 +1,55 @@
+# @package _global_
+
+defaults:
+  - paths: datasets
+  - model: ldm_tiny
+  - training: default
+  - datamodule: single_anndata
+  - _self_
+
+seed: 42
+
+datamodule:
+  dataset: dentate_gyrus
+  datamodule:
+    sample_genes: expressed
+
+training:
+  trainer:
+    enable_progress_bar: true
+    check_val_every_n_epoch: 10
+  num_epochs: 1
+  callbacks:
+    model_checkpoints:
+      # dirpath: ${paths.experiment_path}/checkpoints/dentate_gyrus_fm_ae/hydra-7746fa64a052cf6638023f518b1b4bfe
+      # dirpath: ${paths.experiment_path}/checkpoints/dentate_gyrus_ae/hydra-d43e833dcbb662b562c0e2ff8b67f06e # none
+      # dirpath: ${paths.experiment_path}/checkpoints/dentate_gyrus_ae/hydra-9aa76f990a3aaa7361885fc5b4bea2ff # zero
+      dirpath: ${paths.release_path}
+      original_config_path: ${paths.dataset_paths.dentate_gyrus.config}
+
+model:
+  module:
+    compile: false
+    generation_args: null
+      # guidance_weight: ${datamodule.dataset_params.${datamodule.dataset}.guidance_weight}
+      # timesteps: 50
+    inference_args:
+      n_samples: 1
+    # norm_factor: 0.423321
+  batch_size: 256
+  test_batch_size: 256
+
+experiment_name: dentate_gyrus_inference
+
+dataset_generation_idx: 4
+# ckpt_file: epoch=999.ckpt
+ckpt_file: ${paths.dataset_paths.${datamodule.dataset}.ckpt}
+# temperature: 0.1
+
+inference_path: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/ours
+
+hydra:
+  sweeper:
+    params:
+      datamodule.dataset: dentate_gyrus
+      dataset_generation_idx: expressed
