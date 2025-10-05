@@ -18,33 +18,12 @@ def train(cfg) -> None:
 
     torch.set_float32_matmul_precision("high")
 
-    if hasattr(cfg, "dataset_generation_idx"):
-        if isinstance(cfg.dataset_generation_idx, str):
-            pl.seed_everything(cfg.seed + len(cfg.dataset_generation_idx))
-        else:
-            pl.seed_everything(cfg.seed + cfg.dataset_generation_idx)
-    else:
-        pl.seed_everything(cfg.seed)
+    pl.seed_everything(cfg.seed)
     logger.info("Single-process inference mode")
-    is_main_process = True
-
-    # TODO: maybe remove this eventually
-    torch._dynamo.config.capture_scalar_outputs = True
-
-    # Single-process, single-GPU/CPU setup (no distributed initialization)
 
     logger.info("Loading module config from disk...")
-    # Allow explicit original_config_path override, otherwise fall back to dirpath/config.yaml
-    if (
-        hasattr(cfg.training, "callbacks")
-        and hasattr(cfg.training.callbacks, "model_checkpoints")
-        and hasattr(cfg.training.callbacks.model_checkpoints, "original_config_path")
-        and cfg.training.callbacks.model_checkpoints.original_config_path
-    ):
-        config_yaml_path = cfg.training.callbacks.model_checkpoints.original_config_path
-    else:
-        config_yaml_path = os.path.join(cfg.training.callbacks.model_checkpoints.dirpath, "config.yaml")
-    module_cfg_from_disk = OmegaConf.load(config_yaml_path)
+    module_config = pathlib.Path(cfg.training.callbacks.model_checkpoints.dirpath) / "config.yaml"
+    module_cfg_from_disk = OmegaConf.load(module_config)
 
     logger.info("Instantiating datamodule...")
     print(f"DATAMODULE CONFIG: {cfg.datamodule}")
