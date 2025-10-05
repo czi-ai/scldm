@@ -1,0 +1,35 @@
+# @package _global_
+
+defaults:
+  - paths: datasets
+  - model: ldm_base
+  - training: default
+  - datamodule: default
+  - _self_
+
+seed: 42
+
+datamodule:
+  dataset: dentate_gyrus
+  datamodule:
+    sample_genes: expressed
+
+training:
+  trainer:
+    enable_progress_bar: true
+
+model:
+  module:
+    compile: false
+    generation_args: null
+      # guidance_weight: ${datamodule.dataset_params.${datamodule.dataset}.guidance_weight}
+    inference_args:
+      n_samples: 1
+  batch_size: 256
+  test_batch_size: 256
+
+experiment_name: inference_test
+
+ckpt_file: ${paths.dataset_paths.${datamodule.dataset}.ckpt}
+
+inference_path: /mnt/czi-sci-ai/project-scg-llm-pvc/giovanni/scldm/outputs/2025-10-05/14-44-54
