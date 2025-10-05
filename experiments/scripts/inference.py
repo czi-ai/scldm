@@ -13,6 +13,7 @@ def train(cfg) -> None:
     import torch
     from hydra.core.hydra_config import HydraConfig
     from pytorch_lightning import Trainer
+
     from scldm.logger import logger
 
     torch.set_float32_matmul_precision("high")
