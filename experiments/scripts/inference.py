@@ -232,8 +232,8 @@ def train(cfg) -> None:
 
 
 @hydra.main(
-    config_path="./../config/",
-    config_name="parse_1m_fm_joint_gc_1_keep_out.yaml",
+    config_path="./../configs/",
+    config_name="dentate_gyrus_inference.yaml",
     version_base="1.2",
 )
 def main(cfg: DictConfig) -> None:

@@ -2,9 +2,9 @@
 
 defaults:
   - paths: datasets
-  - model: ldm_tiny
+  - model: ldm_base
   - training: default
-  - datamodule: single_anndata
+  - datamodule: default
   - _self_
 
 seed: 42

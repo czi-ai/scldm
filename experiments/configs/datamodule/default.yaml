@@ -1,8 +1,8 @@
 # DataModule configuration
 datamodule:
   _target_: scldm.datamodule.DataModule
-  train_adata_path: ${dataset_paths.${dataset}.train}
-  test_adata_path: ${dataset_paths.${dataset}.test}
+  train_adata_path: ${paths.dataset_paths.${dataset}.train}
+  test_adata_path: ${paths.dataset_paths.${dataset}.test}
   adata_attr: ${dataset_params.${dataset}.adata_attr}
   adata_key: ${dataset_params.${dataset}.adata_key}
   vocabulary_encoder: ${vocabulary_encoder}
@@ -20,7 +20,7 @@ datamodule:
 
 vocabulary_encoder:
   _target_: scldm.encoder.VocabularyEncoderSimplified
-  adata_path: ${dataset_paths.${dataset}.train}
+  adata_path: ${paths.dataset_paths.${dataset}.train}
   mask_token: "<MASK>"
   mask_token_idx: 0
   n_genes: ${dataset_params.${dataset}.n_genes}

@@ -1,5 +1,5 @@
 defaults:
-  - vae_tiny # this is actually not used cause it's imported from checkpoint
+  - vae_base # this is actually not used cause it's imported from checkpoint
 
 module:
   _target_: scg_vae.models.LatentDiffusion
