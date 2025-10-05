@@ -1,11 +1,11 @@
-# DataModule configuration
+
 datamodule:
   _target_: scldm.datamodule.DataModule
-  train_adata_path: ${paths.dataset_paths.${dataset}.train}
-  test_adata_path: ${paths.dataset_paths.${dataset}.test}
-  adata_attr: ${dataset_params.${dataset}.adata_attr}
-  adata_key: ${dataset_params.${dataset}.adata_key}
-  vocabulary_encoder: ${vocabulary_encoder}
+  train_adata_path: ${paths.dataset_paths.${datamodule.dataset}.train}
+  test_adata_path: ${paths.dataset_paths.${datamodule.dataset}.test}
+  adata_attr: ${..dataset_params.${..dataset}.adata_attr}
+  adata_key: ${..dataset_params.${..dataset}.adata_key}
+  vocabulary_encoder: ${datamodule.vocabulary_encoder}
   batch_size: 32
   test_batch_size: 32
   num_workers: 4
@@ -14,21 +14,21 @@ datamodule:
   persistent_workers: true
   drop_last_indices: true
   drop_incomplete_batch: true
-  sample_genes: ${dataset_params.${dataset}.sample_genes}
-  genes_seq_len: ${dataset_params.${dataset}.genes_seq_len}
+  sample_genes: ${..dataset_params.${..dataset}.sample_genes}
+  genes_seq_len: ${..dataset_params.${..dataset}.genes_seq_len}
   val_as_test: false
 
 vocabulary_encoder:
   _target_: scldm.encoder.VocabularyEncoderSimplified
-  adata_path: ${paths.dataset_paths.${dataset}.train}
+  adata_path: ${paths.dataset_paths.${..dataset}.train}
   mask_token: "<MASK>"
   mask_token_idx: 0
-  n_genes: ${dataset_params.${dataset}.n_genes}
-  class_vocab_sizes: ${dataset_params.${dataset}.class_vocab_sizes}
-  guidance_weight: ${dataset_params.${dataset}.guidance_weight}
-  mu_size_factor: ${dataset_params.${dataset}.mu_size_factor}
-  sd_size_factor: ${dataset_params.${dataset}.sd_size_factor}
-  condition_strategy: ${dataset_params.${dataset}.condition_strategy}
+  n_genes: ${..dataset_params.${..dataset}.n_genes}
+  class_vocab_sizes: ${..dataset_params.${..dataset}.class_vocab_sizes}
+  guidance_weight: ${..dataset_params.${..dataset}.guidance_weight}
+  mu_size_factor: ${..dataset_params.${..dataset}.mu_size_factor}
+  sd_size_factor: ${..dataset_params.${..dataset}.sd_size_factor}
+  condition_strategy: ${..dataset_params.${..dataset}.condition_strategy}
 
 # Dataset selection (override this in experiments)
 dataset: dentate_gyrus

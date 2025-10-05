@@ -31,5 +31,6 @@ model:
 experiment_name: inference_test
 
 ckpt_file: ${paths.dataset_paths.${datamodule.dataset}.ckpt}
+config_file: ${paths.dataset_paths.${datamodule.dataset}.config}
 
 inference_path: /mnt/czi-sci-ai/project-scg-llm-pvc/giovanni/scldm/outputs/2025-10-05/14-44-54

@@ -22,19 +22,13 @@ def train(cfg) -> None:
     logger.info("Single-process inference mode")
 
     logger.info("Loading module config from disk...")
-    module_config = pathlib.Path(cfg.training.callbacks.model_checkpoints.dirpath) / "config.yaml"
-    module_cfg_from_disk = OmegaConf.load(module_config)
+    module_ckpt = pathlib.Path(cfg.ckpt_file)
+    module_config = OmegaConf.load(pathlib.Path(cfg.config_file))
 
     logger.info("Instantiating datamodule...")
-    print(f"DATAMODULE CONFIG: {cfg.datamodule}")
-    # Instantiate datamodule directly from runtime config
-    try:
-        datamodule = hydra.utils.instantiate(cfg.datamodule.datamodule)
-    except Exception:
-        datamodule = hydra.utils.instantiate(cfg.datamodule)
-    logger.info(f"Effective number of steps {cfg.training.trainer.max_steps}")
-    datamodule.setup()
-    print(f"DATAMODULE TYPE: {type(datamodule).__name__}")
+    datamodule = hydra.utils.instantiate(cfg.datamodule.datamodule)
+
+    exit()
 
     logger.info("Instantiating module from module config...")
     # Build model strictly from disk-loaded module config, while preserving runtime overrides for args
@@ -212,7 +206,7 @@ def train(cfg) -> None:
 
 @hydra.main(
     config_path="./../configs/",
-    config_name="dentate_gyrus_inference.yaml",
+    config_name="inference.yaml",
     version_base="1.2",
 )
 def main(cfg: DictConfig) -> None:

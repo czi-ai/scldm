@@ -3,22 +3,22 @@ defaults:
 
 dataset_paths:
   dentate_gyrus:
-    train: ${paths.base_data_path}/dentategyrus/dentategyrus_train.h5ad
-    test: ${paths.base_data_path}/dentategyrus/dentategyrus_test.h5ad
-    config: ${paths.release_path}/dentate_gyrus.yaml
-    ckpt: ${paths.release_path}/dentate_gyrus.ckpt
+    train: ${paths.base_data_path}/dentategyrus_train.h5ad
+    test: ${paths.base_data_path}/dentategyrus_test.h5ad
+    config: ${paths.base_release_path}/dentate_gyrus.yaml
+    ckpt: ${paths.base_release_path}/dentate_gyrus.ckpt
 
   hlca:
     train: ${paths.base_data_path}/hlca_train_sharded/adata_0.h5ad
     test: ${paths.base_data_path}/hlca_test_sharded/adata_0.h5ad
-    config: ${paths.release_path}/hlca.yaml
-    ckpt: ${paths.release_path}/hlca.ckpt
+    config: ${paths.base_release_path}/hlca.yaml
+    ckpt: ${paths.base_release_path}/hlca.ckpt
 
   tabula_muris:
     train: ${paths.base_data_path}/tabula_muris_train_sharded/adata_0.h5ad
     test: ${paths.base_data_path}/tabula_muris_test_sharded/adata_0.h5ad
-    config: ${paths.release_path}/tabula_muris.yaml
-    ckpt: ${paths.release_path}/tabula_muris.ckpt
+    config: ${paths.base_release_path}/tabula_muris.yaml
+    ckpt: ${paths.base_release_path}/tabula_muris.ckpt
 
   czb_cd4_naive_holdout:
     train: ${paths.base_data_path}/czb_data/CD4_Naive_holdout/train.h5ad
