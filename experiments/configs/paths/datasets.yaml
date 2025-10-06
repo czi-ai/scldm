@@ -39,4 +39,8 @@ dataset_paths:
     sd_size_factor: ${paths.base_release_path}/fm_perturbation/replogle_log_size_factor_sd.pkl
 
   homo_sapiens:
+    train: null
+    test: null
     metadata_genes: ${paths.base_release_path}/vae_census/concatenated_unique_genes.parquet
+    config: ${paths.base_release_path}/vae_census/20M.yaml
+    ckpt: ${paths.base_release_path}/vae_census/20M.ckpt

@@ -29,6 +29,7 @@ vocabulary_encoder:
   mu_size_factor: ${..dataset_params.${..dataset}.mu_size_factor}
   sd_size_factor: ${..dataset_params.${..dataset}.sd_size_factor}
   condition_strategy: ${..dataset_params.${..dataset}.condition_strategy}
+  metadata_genes: ${..dataset_params.${..dataset}.metadata_genes}
 
 # Dataset selection (override this in experiments)
 dataset: dentate_gyrus
@@ -48,6 +49,7 @@ dataset_params:
     adata_attr: X
     adata_key: null
     condition_strategy: mutually_exclusive
+    metadata_genes: null
 
   hlca:
     n_genes: 27997
@@ -62,6 +64,7 @@ dataset_params:
     adata_attr: layers
     adata_key: X_counts
     condition_strategy: mutually_exclusive
+    metadata_genes: null
 
   tabula_muris:
     n_genes: 19734
@@ -76,6 +79,7 @@ dataset_params:
     adata_attr: layers
     adata_key: X_counts
     condition_strategy: mutually_exclusive
+    metadata_genes: null
 
   czb_cd4_naive_holdout:
     n_genes: 2000
@@ -92,6 +96,7 @@ dataset_params:
     adata_attr: X
     adata_key: null
     condition_strategy: joint
+    metadata_genes: null
 
   replogle:
     n_genes: 2000
@@ -108,8 +113,9 @@ dataset_params:
     adata_attr: X
     adata_key: null
     condition_strategy: joint
+    metadata_genes: null
 
-homo_sapiens:
+  homo_sapiens:
     n_genes: 36130
     class_vocab_sizes:
       cell_type: 50

@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import partial
-from operator import itemgetter
-from typing import Any
+from typing import Any, cast
 
 import torch
 import torch.distributed as dist
@@ -466,69 +465,130 @@ class LatentDiffusion(BaseModel):
                 self.diffusion_model, mode=self.compile_mode, dynamic=True, fullgraph=False
             )
 
-    def _sample_size_factors(self, condition: dict[str, torch.Tensor] | None, batch_size: int) -> torch.Tensor:
-        """Sample log size factors from normal distributions based on condition labels."""
-        # Get size factor statistics from the datamodule's vocabulary encoder
-        vocab_encoder = self.trainer.datamodule.vocabulary_encoder
-        mu_size_factor = vocab_encoder.mu_size_factor
-        sd_size_factor = vocab_encoder.sd_size_factor
+    def _sample_log_size_factors(self, condition: dict[str, torch.Tensor] | None, batch_size: int) -> torch.Tensor:
+        """Sample log size factors using joint or independent condition stats.
 
-        # Initialize log size factors tensor
+        Behavior:
+        - If `self.diffusion_model.condition_strategy == "joint"` and the vocabulary
+          encoder provides `joint_idx_2_classes` and a valid `joint_key` present in
+          both `mu_size_factor` and `sd_size_factor`, build a joint class key per
+          sample and draw from the corresponding Normal distribution.
+        - Otherwise, fall back to independent sampling based on a single condition key.
+          The key is resolved by `vocab.size_factor_condition_key` if available,
+          otherwise inferred from the intersection of `condition.keys()` with
+          `mu_size_factor`/`sd_size_factor` keys.
+
+        If statistics are missing, return zeros for the affected samples and log a
+        warning once, to keep generation running.
+        """
+        vocab_encoder = self.trainer.datamodule.vocabulary_encoder
+        mu_size_factor = getattr(vocab_encoder, "mu_size_factor", None)
+        sd_size_factor = getattr(vocab_encoder, "sd_size_factor", None)
+
         log_size_factors = torch.zeros(batch_size, device=self.device)
 
-        if condition is not None and mu_size_factor is not None and sd_size_factor is not None:
-            condition_name = next(iter(condition.keys()))
-            label_indices = condition[condition_name]  # shape: (batch_size,)
+        # Early exit when stats or condition are unavailable
+        if condition is None or mu_size_factor is None or sd_size_factor is None:
+            return log_size_factors
 
-            if condition_name in mu_size_factor and condition_name in sd_size_factor:
-                # Iterate over each sample in the batch
-                for i in range(batch_size):
-                    class_idx = int(label_indices[i].item())
+        # Decide whether to use joint sampling
+        use_joint = False
+        joint_idx_2_classes = getattr(vocab_encoder, "joint_idx_2_classes", None)
+        joint_key = getattr(vocab_encoder, "joint_key", None)
+        if getattr(self.diffusion_model, "condition_strategy", None) == "joint" and joint_idx_2_classes is not None:
+            # Safe casts after early None-check above
+            mu_map = cast(dict, mu_size_factor)
+            sd_map = cast(dict, sd_size_factor)
+            if joint_key is not None and joint_key in mu_map and joint_key in sd_map:
+                use_joint = True
 
-                    # Get mean and std for this specific class
-                    mean_val = mu_size_factor[condition_name].get(class_idx)
-                    std_val = sd_size_factor[condition_name].get(class_idx)
-                    if mean_val is None or std_val is None:
-                        raise ValueError(f"Mean or std for class {class_idx} in condition {condition_name} is None")
+        if use_joint:
+            components = getattr(vocab_encoder, "joint_components", None)
+            if components is not None:
+                component_keys = [k for k in components if k in condition]
+            else:
+                component_keys = list(condition.keys())
 
-                    # Sample from normal distribution for this instance
-                    size_factor_dist = Normal(loc=mean_val, scale=std_val)
-                    log_size_factors[i] = size_factor_dist.sample()
+            # Validate lengths for all component keys
+            for k in component_keys:
+                if len(condition[k]) != batch_size:
+                    if not hasattr(self, "_warned_joint_len_mismatch"):
+                        logger.warning(
+                            "Length mismatch for joint components; expected %d, got different sizes. Using zeros.",
+                            batch_size,
+                        )
+                        self._warned_joint_len_mismatch = True
+                    return log_size_factors
 
-        return log_size_factors
-
-    def _joint_sample_size_factors(self, condition: dict[str, torch.Tensor] | None, batch_size: int) -> torch.Tensor:
-        """Sample log size factors from normal distributions based on condition labels."""
-        # TODO : seems to work, but need to test more
-        # Get size factor statistics from the datamodule's vocabulary encoder
-        vocab_encoder = self.trainer.datamodule.vocabulary_encoder
-        mu_size_factor = vocab_encoder.mu_size_factor
-        sd_size_factor = vocab_encoder.sd_size_factor
-        joint_idx_2_classes = vocab_encoder.joint_idx_2_classes
-        # Initialize log size factors tensor
-        log_size_factors = torch.zeros(batch_size, device=self.device)
-
-        if condition is not None and mu_size_factor is not None and sd_size_factor is not None:
-            label_indices_list = []
-            for condition_name in condition.keys():
-                label_indices = condition[condition_name]  # shape: (batch_size,)
-                label_indices_list.append(label_indices)
-
-            for bch_idx in range(len(label_indices_list[0])):
-                # Efficiently get the bch_idx-th item from each list in label_indices_list
-                condition_indices = list(map(itemgetter(bch_idx), label_indices_list))
-                # Join the tensor values as string with underscore
-                condition_key = "_".join(str(tensor.item()) for tensor in condition_indices)
-                condition_key_label = joint_idx_2_classes[condition_key]
-                mean_val = mu_size_factor["cell_type_cytokine"].get(condition_key_label)
-                std_val = sd_size_factor["cell_type_cytokine"].get(condition_key_label)
+            mu_map = cast(dict, mu_size_factor)
+            sd_map = cast(dict, sd_size_factor)
+            for bch_idx in range(batch_size):
+                indices = [int(condition[k][bch_idx].item()) for k in component_keys]
+                key = "_".join(str(i) for i in indices)
+                if key not in joint_idx_2_classes:
+                    if not hasattr(self, "_warned_missing_joint_key"):
+                        logger.warning(
+                            "Joint key '%s' not found in vocabulary_encoder.joint_idx_2_classes; using zero.", key
+                        )
+                        self._warned_missing_joint_key = True
+                    continue
+                class_idx = joint_idx_2_classes[key]
+                mu_vec = cast(dict, mu_map[joint_key])  # type: ignore[index]
+                sd_vec = cast(dict, sd_map[joint_key])  # type: ignore[index]
+                mean_val = mu_vec.get(class_idx)
+                std_val = sd_vec.get(class_idx)
                 if mean_val is None or std_val is None:
-                    raise ValueError(
-                        f"Mean or std for class {condition_key_label} in condition {condition_key_label} is None"
-                    )
-                size_factor_dist = Normal(loc=mean_val, scale=std_val)
-                log_size_factors[bch_idx] = size_factor_dist.sample()
+                    if not hasattr(self, "_warned_missing_stats"):
+                        logger.warning("Missing mean/std for joint size factor; using zero for affected samples.")
+                        self._warned_missing_stats = True
+                    continue
+                log_size_factors[bch_idx] = Normal(loc=mean_val, scale=std_val).sample()
+            return log_size_factors
 
+        # Independent sampling path
+        size_factor_condition_key = getattr(vocab_encoder, "size_factor_condition_key", None)
+        selected_key: str | None = None
+        if (
+            size_factor_condition_key
+            and size_factor_condition_key in condition
+            and size_factor_condition_key in mu_size_factor
+            and size_factor_condition_key in sd_size_factor
+        ):
+            selected_key = size_factor_condition_key
+        else:
+            cond_keys = set(condition.keys())
+            mu_keys = set(mu_size_factor.keys())
+            sd_keys = set(sd_size_factor.keys())
+            inter = sorted(cond_keys & mu_keys & sd_keys)
+            if inter:
+                selected_key = inter[0]
+                if not hasattr(self, "_warned_inferred_condition_key"):
+                    logger.warning("Inferred size-factor condition key '%s' for independent sampling.", selected_key)
+                    self._warned_inferred_condition_key = True
+            else:
+                if not hasattr(self, "_warned_no_condition_key"):
+                    logger.warning("No matching condition key found in mu/sd for size-factor sampling; using zeros.")
+                    self._warned_no_condition_key = True
+                return log_size_factors
+
+        assert selected_key is not None
+        labels = condition[selected_key]
+        if len(labels) != batch_size:
+            raise ValueError(f"Condition '{selected_key}' length ({len(labels)}) must match batch size ({batch_size})")
+        mu_map = cast(dict, mu_size_factor)
+        sd_map = cast(dict, sd_size_factor)
+        for i in range(batch_size):
+            class_idx = int(labels[i].item())
+            mu_vec = cast(dict, mu_map[selected_key])
+            sd_vec = cast(dict, sd_map[selected_key])
+            mean_val = mu_vec.get(class_idx)
+            std_val = sd_vec.get(class_idx)
+            if mean_val is None or std_val is None:
+                if not hasattr(self, "_warned_missing_stats"):
+                    logger.warning("Missing mean/std for independent size factor; using zero for affected samples.")
+                    self._warned_missing_stats = True
+                continue
+            log_size_factors[i] = Normal(loc=mean_val, scale=std_val).sample()
         return log_size_factors
 
     def configure_optimizers(self):
@@ -719,10 +779,7 @@ class LatentDiffusion(BaseModel):
                     raise ValueError(f"Condition '{key}' length ({len(values)}) must match batch size ({batch_size})")
 
         # Sample size factors from normal distributions based on condition labels
-        if self.diffusion_model.condition_strategy == "joint":
-            size_factors = self._joint_sample_size_factors(condition, batch_size)
-        else:
-            size_factors = self._sample_size_factors(condition, batch_size)
+        size_factors = self._sample_log_size_factors(condition, batch_size)
 
         # Initial latent noise
         z = torch.randn(

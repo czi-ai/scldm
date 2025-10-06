@@ -28,7 +28,10 @@ class VocabularyEncoderSimplified:
     _idx2token: dict[int, str] = field(init=False, repr=False)
 
     def __post_init__(self):
-        self.adata = ad.read_h5ad(self.adata_path)
+        if self.adata_path is not None:
+            self.adata = ad.read_h5ad(self.adata_path)
+        else:
+            self.adata = None
         if self.metadata_genes is not None:
             self.metadata_genes = pd.read_parquet(self.metadata_genes)
             self.genes = self.metadata_genes["feature_id"].values
@@ -43,7 +46,10 @@ class VocabularyEncoderSimplified:
             # Prefer the adata var_names length to avoid runtime failures
             self.n_genes = detected_n_genes
 
-        self.labels = {label: self.adata.obs[label].cat.categories.tolist() for label in self.class_vocab_sizes.keys()}
+        if self.adata is not None:
+            self.labels = {
+                label: self.adata.obs[label].cat.categories.tolist() for label in self.class_vocab_sizes.keys()
+            }
 
         genes_tokens = ["<MASK>"]
         genes_tokens += list(self.genes)
