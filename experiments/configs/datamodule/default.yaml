@@ -43,8 +43,8 @@ dataset_params:
       clusters: 1.0
     genes_seq_len: 6147
     sample_genes: expressed
-    mu_size_factor: null
-    sd_size_factor: null
+    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
+    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
     adata_attr: X
     adata_key: null
     condition_strategy: mutually_exclusive
@@ -57,8 +57,8 @@ dataset_params:
       cell_type: 1.0
     genes_seq_len: 10186
     sample_genes: expressed
-    mu_size_factor: null
-    sd_size_factor: null
+    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
+    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
     adata_attr: layers
     adata_key: X_counts
     condition_strategy: mutually_exclusive
@@ -71,8 +71,8 @@ dataset_params:
       tissue: 1.0
     genes_seq_len: 9059
     sample_genes: expressed
-    mu_size_factor: null
-    sd_size_factor: null
+    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
+    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
     adata_attr: layers
     adata_key: X_counts
     condition_strategy: mutually_exclusive
@@ -87,8 +87,8 @@ dataset_params:
       cytokine: 1.0
     genes_seq_len: 2000
     sample_genes: all
-    mu_size_factor: null
-    sd_size_factor: null
+    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
+    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
     adata_attr: X
     adata_key: null
     condition_strategy: joint
@@ -103,8 +103,8 @@ dataset_params:
       gene: 1.0
     genes_seq_len: 2000
     sample_genes: all
-    mu_size_factor: null
-    sd_size_factor: null
+    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
+    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
     adata_attr: X
     adata_key: null
     condition_strategy: joint

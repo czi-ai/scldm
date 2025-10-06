@@ -84,15 +84,16 @@ def train(cfg) -> None:
         filtered_state_dict = {k: v for k, v in state_dict.items() if k in module_keys}
         loaded = len(filtered_state_dict)
         skipped = len(state_dict) - loaded
-        missing = len(module_keys) - loaded
+        missing_keys = module_keys - set(filtered_state_dict.keys())
+        missing = len(missing_keys)
 
         if skipped:
             logger.info(f"Skipping {skipped} keys not present in module")
         if missing:
             logger.info(f"Module has {missing} keys not in checkpoint")
         logger.info(f"Loading {loaded} matching keys from checkpoint")
-
-        module.load_state_dict(filtered_state_dict, strict=False)
+        module.load_state_dict(filtered_state_dict, strict=True)
+        logger.info("Successfully loaded state dict into module")
     else:
         logger.warning(f"Checkpoint file not found: {module_ckpt}")
 

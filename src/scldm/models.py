@@ -738,7 +738,6 @@ class LatentDiffusion(BaseModel):
                 f"Guidance weight keys {set(guidance_weight.keys())} must match condition keys {set(condition.keys())}"
             )
 
-        # SiT-style CFG: duplicate inputs for unconditional/conditional
         z_cfg = torch.cat([z, z], dim=0)
 
         # Duplicate conditions for CFG
@@ -752,15 +751,10 @@ class LatentDiffusion(BaseModel):
         )
         samples = sample_fn(z_cfg, model_fn, **{"condition": condition_cfg})[-1]
 
-        # samples = samples / self.vae_model.norm_factor
         genes = torch.cat([genes, genes], dim=0)
 
-        # Convert log size factors to actual size factors and duplicate for CFG
         size_factors_actual = torch.exp(size_factors).view(-1, 1)  # shape: (batch_size, 1)
         size_factors_cfg = torch.cat([size_factors_actual, size_factors_actual], dim=0)
-        # if self.model_is_compiled:
-        #     nb = self.vae_model_compiled.decode(samples, genes, size_factors_cfg)
-        # else:
         nb = self.vae_model.decode(samples, genes, size_factors_cfg)
         return nb.sample(), samples
 
