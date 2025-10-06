@@ -98,24 +98,6 @@ class BaseModel(LightningModule, ABC):
             if callable(set_epoch):
                 set_epoch(self.current_epoch)
 
-    # def on_train_epoch_end(self) -> None:
-    # from cellarium-ml
-    # combined_loader = self.trainer.fit_loop._combined_loader
-    # assert combined_loader is not None
-    # dataloaders = combined_loader.flattened
-    # for dataloader in dataloaders:
-    #     dataset = dataloader.dataset
-    #     if dist.is_initialized():
-    #         rank = dist.get_rank()
-    #         world_size = dist.get_world_size()
-    #         logger.info(f"Rank {rank}/{world_size} - Train dataset size: {len(dataset)}")
-    #     set_resume_step = getattr(dataset, "set_resume_step", None)
-    #     if callable(set_resume_step):
-    #         set_resume_step(None)
-
-    # if hasattr(self, "ema_model"):
-    #     self.ema_model.update_model_with_ema()  # switch ema https://arxiv.org/abs/2402.09240
-
     def on_validation_start(self):
         """Reset datasets before validation to ensure consistent state"""
         # Add logging to debug
@@ -263,15 +245,9 @@ class VAE(BaseModel):
         theta: torch.Tensor,
     ) -> dict[str, Any]:
         recon_loss = -log_nb_positive(counts, mu, theta)
-
         output = {
             LossEnum.LLH_LOSS.value: recon_loss.sum(dim=1).mean(),
         }
-
-        # for k, v in output.items():
-        #     if torch.isnan(v).any():
-        #         raise ValueError(f"NaN values detected in {k}")
-
         return output
 
     def training_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
@@ -455,14 +431,9 @@ class LatentDiffusion(BaseModel):
             self.vae_model.eval()
 
         self.diffusion_model = diffusion_model
-        self.model_is_compiled = compile
 
-        # if compile:
-        #     logger.info(f"Compiling model with {compile_mode} mode.")
-        #     self.diffusion_model_compiled = torch.compile(self.diffusion_model, mode=compile_mode, dynamic=False)
-        #     # Only create vae_model_compiled if VAE compilation is actually needed
-        #     # For now, just use the original vae_model without compilation
-        #     self.vae_model_compiled = torch.compile(self.vae_model, mode=compile_mode, dynamic=False)
+        self.model_is_compiled = compile
+        self.compile_mode = compile_mode
 
         self.transport = transport
         self.transport_sampler = Sampler(self.transport)
@@ -484,6 +455,16 @@ class LatentDiffusion(BaseModel):
         self.accumulated_generated_batches: list[torch.Tensor] = []
         self.accumulated_samples = 0  # number of samples accumulated for generation evaluation
         self.is_generation_eval_epoch = False  # used in on_validation*** to decide if it is a generation eval epoch
+
+    def on_fit_start(self) -> None:
+        if self.model_is_compiled:
+            logger.info(f"Compiling model with {self.compile_mode} mode.")
+            self.vae_model_compiled = torch.compile(
+                self.vae_model, mode=self.compile_mode, dynamic=True, fullgraph=False
+            )
+            self.diffusion_model_compiled = torch.compile(
+                self.diffusion_model, mode=self.compile_mode, dynamic=True, fullgraph=False
+            )
 
     def _sample_size_factors(self, condition: dict[str, torch.Tensor] | None, batch_size: int) -> torch.Tensor:
         """Sample log size factors from normal distributions based on condition labels."""
@@ -929,10 +910,9 @@ class VAEScvi(BaseModel):
         super().__init__()
 
         self.vae_model = vae_model
+
         self.model_is_compiled = compile
-        if compile:
-            logger.info(f"Compiling model with {compile_mode} mode.")
-            self.vae_model_compiled = torch.compile(self.vae_model, mode=compile_mode, dynamic=False, fullgraph=True)
+        self.compile_mode = compile_mode
 
         self.vae_scheduler = vae_scheduler
         self.vae_optimizer = vae_optimizer
@@ -949,6 +929,13 @@ class VAEScvi(BaseModel):
 
         self.generation_args = generation_args
         self.inference_args = inference_args
+
+    def on_fit_start(self) -> None:
+        if self.model_is_compiled:
+            logger.info(f"Compiling model with {self.compile_mode} mode.")
+            self.vae_model_compiled = torch.compile(
+                self.vae_model, mode=self.compile_mode, dynamic=True, fullgraph=False
+            )
 
     def configure_optimizers(self):
         vae_params = [p for p in self.vae_model.parameters() if p.requires_grad]
