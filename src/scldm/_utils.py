@@ -15,15 +15,6 @@ from scldm.constants import ModelEnum
 from scldm.logger import logger
 
 
-def _get_cosine_schedule_with_warmup_lr_lambda(
-    current_step: int, *, num_warmup_steps: int, num_training_steps: int, num_cycles: float, min_lr: float
-) -> float:
-    if current_step < num_warmup_steps:
-        return float(current_step) / float(max(1, num_warmup_steps))
-    progress = float(current_step - num_warmup_steps) / float(max(1, num_training_steps - num_warmup_steps))
-    return max(min_lr, 0.5 * (1.0 + math.cos(math.pi * float(num_cycles) * 2.0 * progress)))
-
-
 def wsd_schedule(
     num_training_steps,
     final_lr_factor=0.1,
@@ -67,14 +58,6 @@ def wsd_schedule(
     return schedule
 
 
-class MaskingSchedulerCallback:  # removed unused Callback-based implementation
-    pass
-
-
-def world_info_from_env():  # unused
-    return 0, 0, 1
-
-
 def sort_h5ad_files(path: Path) -> list[str]:
     return sorted(
         [file.as_posix() for file in path.glob("*.h5ad")],
@@ -116,18 +99,6 @@ def get_tissue_adata_files(base_path: Path, split: str = "train") -> tuple[list[
     return sorted(all_files), total_cells, shard_size.pop()
 
 
-def get_flops(*args, **kwargs):  # unused
-    raise NotImplementedError
-
-
-def get_inducing_points(n_inducing_points: int):  # unused
-    return [n_inducing_points] if isinstance(n_inducing_points, int) else []
-
-
-def get_n_embed_inducing_points(n_embed: int, n_inducing_points: int):  # unused
-    return [n_embed]
-
-
 def remap_config(cfg):
     """Recursively remap scg_vae references to scldm in config."""
     if isinstance(cfg, DictConfig):
@@ -163,10 +134,6 @@ class RemapPickle:
 
 
 remap_pickle = RemapPickle()
-
-
-def process_generation(generation_output: list[dict[str, torch.Tensor]]):  # unused
-    raise NotImplementedError
 
 
 def process_generation_output(
@@ -225,10 +192,6 @@ def process_generation_output(
     adata = ad.AnnData(X=X_combined, obs=obs_combined, obsm={"z": z_combined})
     adata.var_names = var_names
     return adata
-
-
-def create_anndata_from_inference_output(output: dict[str, torch.Tensor], datamodule: Any):  # unused
-    raise NotImplementedError
 
 
 def process_inference_output(
