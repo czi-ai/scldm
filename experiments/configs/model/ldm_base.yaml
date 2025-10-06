@@ -2,11 +2,11 @@ defaults:
   - vae_base # this is actually not used cause it's imported from checkpoint
 
 module:
-  _target_: scg_vae.models.LatentDiffusion
+  _target_: scldm.models.LatentDiffusion
   diffusion_model:
-    # _target_: scg_vae.diffusion.FlowMatching
+    # _target_: scldm.diffusion.FlowMatching
     # nnet:
-    _target_: scg_vae.nnets.DiT
+    _target_: scldm.nnets.DiT
     n_embed: 256
     n_embed_input: ${model.module.vae_model.encoder.n_embed_latent}
     seq_len: ${model.module.vae_model.encoder.n_inducing_points}
@@ -21,7 +21,7 @@ module:
     cfg_dropout_prob: 0.8
     condition_strategy: mutually_exclusive
   transport:
-    _target_: scg_vae.transport.create_transport
+    _target_: scldm.transport.create_transport
     path_type: Linear
     prediction: velocity
     loss_weight: velocity
@@ -35,7 +35,7 @@ module:
     # betas: [0.9, 0.95]
     #betas: [0.9, 0.95]
   diffusion_scheduler:
-    _target_: scg_vae._utils.wsd_schedule
+    _target_: scldm._utils.wsd_schedule
     num_training_steps: ${training.trainer.max_steps}
     final_lr_factor: 0.1
     num_warmup_steps: null
@@ -55,7 +55,7 @@ num_parameters: null
 flops: null
 
 get_flops:
-  _target_: scg_vae.flops.get_flops
+  _target_: scldm.flops.get_flops
   seq_len: ${model.module.diffusion_model.seq_len}
   vocab_size: ${model.module.diffusion_model.seq_len}
   num_heads: ${model.module.diffusion_model.n_head}

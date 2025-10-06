@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytorch_lightning as pl
 import torch
+from omegaconf import DictConfig
 from pytorch_lightning.callbacks import Callback
 from torch.utils._pytree import tree_map
 from torch.utils.flop_counter import FlopCounterMode
@@ -203,6 +204,22 @@ def get_n_embed_inducing_points(n_embed: int, n_inducing_points: int):
     return n_embed_list
 
 
+def remap_config(cfg):
+    """Recursively remap scg_vae references to scldm in config."""
+    if isinstance(cfg, DictConfig):
+        for key, value in cfg.items():
+            if isinstance(value, str) and "scg_vae" in value:
+                cfg[key] = value.replace("scg_vae", "scldm")
+            elif isinstance(value, (DictConfig, dict)):
+                remap_config(value)
+    elif isinstance(cfg, dict):
+        for key, value in cfg.items():
+            if isinstance(value, str) and "scg_vae" in value:
+                cfg[key] = value.replace("scg_vae", "scldm")
+            elif isinstance(value, (DictConfig, dict)):
+                remap_config(value)
+
+
 class RemapUnpickler(pickle.Unpickler):
     """Unpickler that remaps scg_vae module names to scldm."""
 
@@ -222,3 +239,133 @@ class RemapPickle:
 
 
 remap_pickle = RemapPickle()
+
+
+def process_generation(generation_output: list[dict[str, torch.Tensor]]) -> tuple[torch.Tensor, torch.Tensor]:
+    import anndata as ad
+    from scipy import sparse
+
+    generated_counts = torch.cat(
+        [
+            generation_output[i][f"{ModelEnum.COUNTS.value}_generated"]
+            for i in range(len(generation_output))
+            if generation_output[i] is not None
+        ]
+    )
+    true_counts = torch.cat(
+        [
+            generation_output[i][ModelEnum.COUNTS.value]
+            for i in range(len(generation_output))
+            if generation_output[i] is not None
+        ]
+    )
+
+    adata_true = ad.AnnData(sparse.csr_matrix(true_counts.numpy()))
+    adata_generated = ad.AnnData(sparse.csr_matrix(generated_counts.numpy()))
+    return adata_true, adata_generated
+
+
+def process_generation_output(
+    output: list[dict[str, torch.Tensor]],
+    datamodule: Any,
+) -> ad.AnnData:
+    logger.info("Processing generation output")
+    # counts_true_sparse = sparse.vstack([sparse.csr_matrix(o[f"{ModelEnum.COUNTS.value}"].numpy()) for o in output])
+    counts_generated_unconditional_sparse = sparse.vstack(
+        [sparse.csr_matrix(o[f"{ModelEnum.COUNTS.value}_generated_unconditional"].numpy()) for o in output]
+    )
+    counts_generated_conditional_sparse = sparse.vstack(
+        [sparse.csr_matrix(o[f"{ModelEnum.COUNTS.value}_generated_conditional"].numpy()) for o in output]
+    )
+    z_generated_unconditional = np.vstack([o["z_generated_unconditional"].numpy() for o in output])
+    z_generated_conditional = np.vstack([o["z_generated_conditional"].numpy() for o in output])
+
+    genes = output[0][f"{ModelEnum.GENES.value}"][0, :]
+    var_names = datamodule.vocabulary_encoder.decode_genes(genes)
+
+    # Only decode labels that are present in the output; skip missing ones
+    available_keys = set.intersection(*[set(o.keys()) for o in output]) if output else set()
+    desired_keys = set(datamodule.vocabulary_encoder.labels.keys())
+    present_label_keys = sorted(desired_keys & available_keys)
+    missing_label_keys = sorted(desired_keys - available_keys)
+    if missing_label_keys:
+        logger.info(f"[generation_output] Skipping missing label columns in outputs: {missing_label_keys}")
+
+    # Stack label tensors/arrays robustly, then decode
+    obs = {}
+    for k in present_label_keys:
+        parts = []
+        for o in output:
+            v = o[k]
+            if torch.is_tensor(v):
+                parts.append(v.detach().cpu().numpy())
+            else:
+                parts.append(np.asarray(v))
+        stacked = np.concatenate(parts, axis=0)
+        obs[k] = datamodule.vocabulary_encoder.decode_metadata(stacked, k)
+
+    del output
+
+    n_cells = counts_generated_unconditional_sparse.shape[0]
+
+    obs_generated_unconditional = pd.DataFrame(obs, index=np.arange(n_cells).astype(str))
+    obs_generated_conditional = pd.DataFrame(obs, index=np.arange(n_cells, 2 * n_cells).astype(str))
+
+    obs_generated_unconditional["dataset"] = "generated_unconditional"
+    obs_generated_conditional["dataset"] = "generated_conditional"
+
+    X_combined = sparse.vstack([counts_generated_unconditional_sparse, counts_generated_conditional_sparse])
+    z_combined = np.vstack([z_generated_unconditional, z_generated_conditional])
+
+    obs_combined = pd.concat([obs_generated_unconditional, obs_generated_conditional], axis=0)
+    adata = ad.AnnData(X=X_combined, obs=obs_combined, obsm={"z": z_combined})
+    adata.var_names = var_names
+    return adata
+
+
+def create_anndata_from_inference_output(
+    output: dict[str, torch.Tensor],
+    datamodule: Any,
+) -> ad.AnnData:
+    z_sample = output["z_sample"].numpy()
+    z_sample_flat = output["z_sample_flat"].numpy()
+    generated_counts = sparse.csr_matrix(output["reconstructed_counts"].numpy())
+    genes = output[f"{ModelEnum.GENES.value}"][0, :]
+    var_names = datamodule.vocabulary_encoder.decode_genes(genes)
+    obs = {
+        k: datamodule.vocabulary_encoder.decode_metadata(output[k].numpy(), k)
+        for k in datamodule.vocabulary_encoder.labels.keys()
+    }
+
+    n_cells = len(z_sample)
+    obs = pd.DataFrame(obs, index=np.arange(n_cells).astype(str))
+
+    adata = ad.AnnData(X=generated_counts, obs=obs, obsm={"z_sample": z_sample, "z_sample_flat": z_sample_flat})
+    adata.var_names = var_names
+    adata.layers["counts"] = adata.X.copy()
+    return adata
+
+
+def process_inference_output(
+    output: list[ad.AnnData],
+    datamodule: Any,
+) -> ad.AnnData:
+    logger.info("Processing inference output")
+    adata = ad.concat(output)
+
+    # sc.pp.normalize_total(adata)
+    # sc.pp.log1p(adata)
+    # sc.pp.pca(adata)
+    # sc.pp.neighbors(adata)
+    # sc.tl.umap(adata)
+
+    # # process latents
+    # adata.obsm["z_sample_flat_pca"] = sc.pp.pca(adata.obsm["z_sample_flat"])
+
+    # sc.pp.neighbors(adata, use_rep="z_sample", key_added="z_sample_neighbors")
+    # sc.pp.neighbors(adata, use_rep="z_sample_flat_pca", key_added="z_sample_flat_pca_neighbors", n_neighbors=10)
+
+    # sc.tl.umap(adata, neighbors_key="z_sample_neighbors", key_added="z_sample_neighbors_umap")
+    # sc.tl.umap(adata, neighbors_key="z_sample_flat_pca_neighbors", key_added="z_sample_flat_pca_neighbors_umap")
+
+    return adata

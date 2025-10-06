@@ -697,7 +697,7 @@ class LatentDiffusion(BaseModel):
             batch["z_generated_conditional"] = z_outputs[batch_size_single:].flatten(start_dim=1)
             return tree_map(lambda x: x.cpu(), batch)
         elif self.inference_args is not None:
-            from scg_vae._train_utils import create_anndata_from_inference_output
+            from scldm._train_utils import create_anndata_from_inference_output
 
             logger.info("Running inference")
             encode_kwargs = {str(k): v for k, v in self.inference_args.items()} if self.inference_args else {}
@@ -1179,7 +1179,7 @@ class VAEScvi(BaseModel):
         batch: dict[str, torch.Tensor],
         batch_idx: int,
     ) -> dict[str, torch.Tensor]:
-        from scg_vae._train_utils import create_anndata_from_inference_output
+        from scldm._train_utils import create_anndata_from_inference_output
 
         outputs = self.inference(batch)
         batch.update(outputs)

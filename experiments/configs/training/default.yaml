@@ -19,14 +19,14 @@ trainer:
 logger:
   csv:
     _target_: pytorch_lightning.loggers.csv_logs.CSVLogger
-    save_dir: ${paths.experiment_path}/csv_logger
+    save_dir: ${paths.base_experiment_path}/csv_logger
     name: ${experiment_name}
     version: null
     prefix: ""
   wandb:
     _target_: pytorch_lightning.loggers.wandb.WandbLogger
     _partial_: true
-    save_dir: ${paths.experiment_path}/wandb_logger
+    save_dir: ${paths.base_experiment_path}/wandb_logger
     project: ${experiment_name}
     entity: scg-vae
     name: null
@@ -41,7 +41,7 @@ callbacks:
       log_weight_decay: true
   model_checkpoints:
     _target_: pytorch_lightning.callbacks.ModelCheckpoint
-    dirpath: ${paths.experiment_path}/checkpoints
+    dirpath: ${paths.base_experiment_path}/checkpoints
     filename: "{epoch}"
     save_weights_only: false
     save_on_train_epoch_end: true
@@ -51,7 +51,7 @@ callbacks:
     enable_version_counter: false
     save_last: true
   # reconstruction_viz:
-  #   _target_: scg_vae.viz_callbacks.ReconstructionVisualizationCallback
+  #   _target_: scldm.viz_callbacks.ReconstructionVisualizationCallback
   #   max_cells: 100
   #   device: "cuda"
 
