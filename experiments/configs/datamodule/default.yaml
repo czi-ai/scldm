@@ -108,3 +108,17 @@ dataset_params:
     adata_attr: X
     adata_key: null
     condition_strategy: joint
+
+homo_sapiens:
+    n_genes: 36130
+    class_vocab_sizes:
+      cell_type: 50
+    guidance_weight:
+      cell_type: 1.0
+    genes_seq_len: 8000
+    mu_size_factor: null
+    sd_size_factor: null
+    adata_attr: X
+    adata_key: null
+    condition_strategy: "mutually_exclusive"
+    metadata_genes: ${paths.dataset_paths.${datamodule.dataset}.metadata_genes}

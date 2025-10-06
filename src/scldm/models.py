@@ -486,8 +486,8 @@ class LatentDiffusion(BaseModel):
                     class_idx = int(label_indices[i].item())
 
                     # Get mean and std for this specific class
-                    mean_val = mu_size_factor[condition_name].get(class_idx, None)
-                    std_val = sd_size_factor[condition_name].get(class_idx, None)
+                    mean_val = mu_size_factor[condition_name].get(class_idx)
+                    std_val = sd_size_factor[condition_name].get(class_idx)
                     if mean_val is None or std_val is None:
                         raise ValueError(f"Mean or std for class {class_idx} in condition {condition_name} is None")
 
@@ -520,8 +520,8 @@ class LatentDiffusion(BaseModel):
                 # Join the tensor values as string with underscore
                 condition_key = "_".join(str(tensor.item()) for tensor in condition_indices)
                 condition_key_label = joint_idx_2_classes[condition_key]
-                mean_val = mu_size_factor["cell_type_cytokine"].get(condition_key_label, None)  # TODO remove hardcode
-                std_val = sd_size_factor["cell_type_cytokine"].get(condition_key_label, None)  # TODO remove hardcode
+                mean_val = mu_size_factor["cell_type_cytokine"].get(condition_key_label)
+                std_val = sd_size_factor["cell_type_cytokine"].get(condition_key_label)
                 if mean_val is None or std_val is None:
                     raise ValueError(
                         f"Mean or std for class {condition_key_label} in condition {condition_key_label} is None"

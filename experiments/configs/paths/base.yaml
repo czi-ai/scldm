@@ -1,4 +1,4 @@
 # Dataset and release roots
 base_data_path: /mnt/czi-sci-ai/project-scg-llm-pvc/release/datasets
-base_release_path: /mnt/czi-sci-ai/project-scg-llm-pvc/release/fm_observational
+base_release_path: /mnt/czi-sci-ai/project-scg-llm-pvc/release
 base_experiment_path: /mnt/czi-sci-ai/project-scg-llm-pvc/experiments/release

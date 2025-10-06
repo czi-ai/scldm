@@ -5,35 +5,38 @@ dataset_paths:
   dentate_gyrus:
     train: ${paths.base_data_path}/dentategyrus_train.h5ad
     test: ${paths.base_data_path}/dentategyrus_test.h5ad
-    config: ${paths.base_release_path}/dentate_gyrus.yaml
-    ckpt: ${paths.base_release_path}/dentate_gyrus.ckpt
-    mu_size_factor: ${paths.base_release_path}/dentate_gyrus_log_size_factor_mu.pth
-    sd_size_factor: ${paths.base_release_path}/dentate_gyrus_log_size_factor_sd.pth
+    config: ${paths.base_release_path}/fm_observational/dentate_gyrus.yaml
+    ckpt: ${paths.base_release_path}/fm_observational/dentate_gyrus.ckpt
+    mu_size_factor: ${paths.base_release_path}/fm_observational/dentate_gyrus_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/fm_observational/dentate_gyrus_log_size_factor_sd.pkl
 
   hlca:
     train: ${paths.base_data_path}/hlca_train_sharded/adata_0.h5ad
     test: ${paths.base_data_path}/hlca_test_sharded/adata_0.h5ad
-    config: ${paths.base_release_path}/hlca.yaml
-    ckpt: ${paths.base_release_path}/hlca.ckpt
-    mu_size_factor: ${paths.base_release_path}/hlca_log_size_factor_mu.pth
-    sd_size_factor: ${paths.base_release_path}/hlca_log_size_factor_sd.pth
+    config: ${paths.base_release_path}/fm_observational/hlca.yaml
+    ckpt: ${paths.base_release_path}/fm_observational/hlca.ckpt
+    mu_size_factor: ${paths.base_release_path}/fm_observational/hlca_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/fm_observational/hlca_log_size_factor_sd.pkl
 
   tabula_muris:
     train: ${paths.base_data_path}/tabula_muris_train_sharded/adata_0.h5ad
     test: ${paths.base_data_path}/tabula_muris_test_sharded/adata_0.h5ad
-    config: ${paths.base_release_path}/tabula_muris.yaml
-    ckpt: ${paths.base_release_path}/tabula_muris.ckpt
-    mu_size_factor: ${paths.base_release_path}/tabula_muris_log_size_factor_mu.pth
-    sd_size_factor: ${paths.base_release_path}/tabula_muris_log_size_factor_sd.pth
+    config: ${paths.base_release_path}/fm_observational/tabula_muris.yaml
+    ckpt: ${paths.base_release_path}/fm_observational/tabula_muris.ckpt
+    mu_size_factor: ${paths.base_release_path}/fm_observational/tabula_muris_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/fm_observational/tabula_muris_log_size_factor_sd.pkl
 
   czb_cd4_naive_holdout:
     train: ${paths.base_data_path}/czb_data/CD4_Naive_holdout/train.h5ad
     test: ${paths.base_data_path}/czb_data/CD4_Naive_holdout/test.h5ad
-    mu_size_factor: ${paths.base_release_path}/czb_cd4_naive_holdout_log_size_factor_mu.pth
-    sd_size_factor: ${paths.base_release_path}/czb_cd4_naive_holdout_log_size_factor_sd.pth
+    mu_size_factor: ${paths.base_release_path}/fm_perturbation/czb_cd4_naive_holdout_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/fm_perturbation/czb_cd4_naive_holdout_log_size_factor_sd.pkl
 
   replogle:
     train: ${paths.base_data_path}/czb_data/Replogle_Nadig_from_STATE/processed/train_asSTATE_hvg.h5ad
     test: ${paths.base_data_path}/czb_data/Replogle_Nadig_from_STATE/processed/test_asSTATE_hvg.h5ad
-    mu_size_factor: ${paths.base_release_path}/replogle_log_size_factor_mu.pth
-    sd_size_factor: ${paths.base_release_path}/replogle_log_size_factor_sd.pth
+    mu_size_factor: ${paths.base_release_path}/fm_perturbation/replogle_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/fm_perturbation/replogle_log_size_factor_sd.pkl
+
+  homo_sapiens:
+    metadata_genes: ${paths.base_release_path}/vae_census/concatenated_unique_genes.parquet

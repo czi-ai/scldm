@@ -10,7 +10,7 @@ defaults:
 seed: 42
 
 datamodule:
-  dataset: homo_sapiens
+  dataset: dentate_gyrus
   datamodule:
     sample_genes: expressed
     test_batch_size: 128 # for small datasets

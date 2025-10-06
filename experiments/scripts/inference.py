@@ -124,7 +124,7 @@ def train(cfg) -> None:
 
 @hydra.main(
     config_path="./../configs/",
-    config_name="inference.yaml",
+    config_name="generation.yaml",
     version_base="1.2",
 )
 def main(cfg: DictConfig) -> None:
