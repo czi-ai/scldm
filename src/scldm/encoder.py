@@ -35,6 +35,10 @@ class VocabularyEncoderSimplified:
         if self.metadata_genes is not None:
             self.metadata_genes = pd.read_parquet(self.metadata_genes)
             self.genes = self.metadata_genes["feature_id"].values
+            # Create conversion dict from gene symbols to ensemble genes
+            self.gene_symbol_to_ensembl = dict(
+                zip(self.metadata_genes["feature_name"].values, self.metadata_genes["feature_id"].values, strict=False)
+            )
         else:
             self.genes = self.adata.var_names.values
 
@@ -50,6 +54,8 @@ class VocabularyEncoderSimplified:
             self.labels = {
                 label: self.adata.obs[label].cat.categories.tolist() for label in self.class_vocab_sizes.keys()
             }
+        else:
+            self.labels = None
 
         genes_tokens = ["<MASK>"]
         genes_tokens += list(self.genes)
@@ -60,14 +66,15 @@ class VocabularyEncoderSimplified:
         self.gene_tokens_idx = list(self._gene_token2idx.values())[1:]
         assert self.mask_token_idx == self._gene_token2idx[self.mask_token]
 
-        self.classes2idx = {
-            label: {token: idx for idx, token in enumerate(map(str, self.labels[label]))}
-            for label in self.class_vocab_sizes.keys()
-        }
-        self.idx2classes = {
-            label: {idx: token for token, idx in self.classes2idx[label].items()}
-            for label in self.class_vocab_sizes.keys()
-        }
+        if self.labels is not None:
+            self.classes2idx = {
+                label: {token: idx for idx, token in enumerate(map(str, self.labels[label]))}
+                for label in self.class_vocab_sizes.keys()
+            }
+            self.idx2classes = {
+                label: {idx: token for token, idx in self.classes2idx[label].items()}
+                for label in self.class_vocab_sizes.keys()
+            }
 
         # size factors
         if hasattr(self, "condition_strategy") and self.condition_strategy != "joint":

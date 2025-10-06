@@ -117,10 +117,8 @@ dataset_params:
 
   homo_sapiens:
     n_genes: 36130
-    class_vocab_sizes:
-      cell_type: 50
-    guidance_weight:
-      cell_type: 1.0
+    class_vocab_sizes: null
+    guidance_weight: null
     genes_seq_len: 8000
     mu_size_factor: null
     sd_size_factor: null

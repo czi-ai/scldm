@@ -27,3 +27,5 @@ __pycache__/
 # Local notes
 SETUP_NOTES.md
 /outputs/
+/data/
+*.h5ad

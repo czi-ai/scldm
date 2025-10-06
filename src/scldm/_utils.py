@@ -194,46 +194,42 @@ def process_generation_output(
     return adata
 
 
+def create_anndata_from_inference_output(
+    output: dict[str, torch.Tensor],
+    datamodule: Any,
+) -> ad.AnnData:
+    z = output["z"].numpy()
+    generated_counts = sparse.csr_matrix(output["reconstructed_counts"].numpy())
+    genes = output[f"{ModelEnum.GENES.value}"][0, :]
+    var_names = datamodule.vocabulary_encoder.decode_genes(genes)
+    if datamodule.vocabulary_encoder.labels is not None:
+        obs = {
+            k: datamodule.vocabulary_encoder.decode_metadata(output[k].numpy(), k)
+            for k in datamodule.vocabulary_encoder.labels.keys()
+        }
+    else:
+        obs = {}
+
+    n_cells = len(z)
+    obs = pd.DataFrame(obs, index=np.arange(n_cells).astype(str))
+
+    adata = ad.AnnData(
+        X=generated_counts,
+        obs=obs,
+        obsm={
+            "z": z,
+        },
+    )
+    adata.var_names = var_names
+    adata.layers["counts"] = adata.X.copy()
+    return adata
+
+
 def process_inference_output(
     output: list[ad.AnnData],
     datamodule: Any,
 ) -> ad.AnnData:
     logger.info("Processing inference output")
-    # Extract counts and latent representations
-    counts_sparse = sparse.vstack([sparse.csr_matrix(o[f"{ModelEnum.COUNTS.value}"].numpy()) for o in output])
-    z = np.vstack([o["z"].numpy() for o in output])
-
-    genes = output[0][f"{ModelEnum.GENES.value}"][0, :]
-    var_names = datamodule.vocabulary_encoder.decode_genes(genes)
-
-    # Only decode labels that are present in the output; skip missing ones
-    available_keys = set.intersection(*[set(o.keys()) for o in output]) if output else set()
-    desired_keys = set(datamodule.vocabulary_encoder.labels.keys())
-    present_label_keys = sorted(desired_keys & available_keys)
-    missing_label_keys = sorted(desired_keys - available_keys)
-    if missing_label_keys:
-        logger.info(f"[inference_output] Skipping missing label columns in outputs: {missing_label_keys}")
-
-    # Stack label tensors/arrays robustly, then decode
-    obs = {}
-    for k in present_label_keys:
-        parts = []
-        for o in output:
-            v = o[k]
-            if torch.is_tensor(v):
-                parts.append(v.detach().cpu().numpy())
-            else:
-                parts.append(np.asarray(v))
-        stacked = np.concatenate(parts, axis=0)
-        obs[k] = datamodule.vocabulary_encoder.decode_metadata(stacked, k)
-
-    del output
-
-    n_cells = counts_sparse.shape[0]
-    obs_df = pd.DataFrame(obs, index=np.arange(n_cells).astype(str))
-    obs_df["dataset"] = "inference"
-
-    adata = ad.AnnData(X=counts_sparse, obs=obs_df, obsm={"z": z})
-    adata.var_names = var_names
+    adata = ad.concat(output)
 
     return adata

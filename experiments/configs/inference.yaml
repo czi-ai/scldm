@@ -13,7 +13,7 @@ datamodule:
   dataset: homo_sapiens
   datamodule:
     sample_genes: expressed
-    test_batch_size: 128 # for small datasets
+    test_batch_size: 64
 
 training:
   trainer:

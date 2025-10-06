@@ -225,16 +225,9 @@ class VAE(BaseModel):
         counts_subset: torch.Tensor | None = None,
         genes_subset: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        if self.model_is_compiled:
-            if not hasattr(self, "vae_model_compiled"):
-                logger.info(f"Compiling model with {self.compile_mode} mode during forward pass.")
-                self.vae_model_compiled = torch.compile(
-                    self.vae_model, mode="reduce-overhead", dynamic=False, fullgraph=True
-                )
-            logger.debug("Using compiled VAE model")
+        if hasattr(self, "vae_model_compiled"):
             return self.vae_model_compiled(counts, genes, library_size, counts_subset, genes_subset)
         else:
-            logger.debug("Using non-compiled VAE model")
             return self.vae_model(counts, genes, library_size, counts_subset, genes_subset)
 
     def loss(
@@ -339,8 +332,7 @@ class VAE(BaseModel):
         batch_idx: int,
     ) -> dict[str, torch.Tensor]:
         outputs = self.inference(batch)
-        batch.update(outputs)
-        return tree_map(lambda x: x.cpu(), batch)
+        return outputs
 
     @torch.no_grad()
     def sample(
@@ -357,23 +349,25 @@ class VAE(BaseModel):
         n_samples: int | None = None,
         **kwargs,
     ) -> dict[str, torch.Tensor]:
-        counts = batch[ModelEnum.COUNTS.value]
-        genes = batch[ModelEnum.GENES.value]
-        library_size = batch[ModelEnum.LIBRARY_SIZE.value]
-        counts_subset = batch.get(ModelEnum.COUNTS_SUBSET.value, None)
-        genes_subset = batch.get(ModelEnum.GENES_SUBSET.value, None)
+        from scldm._utils import create_anndata_from_inference_output
 
-        _, _, z = self.forward(
-            counts=counts,
-            genes=genes,
-            library_size=library_size,
-            counts_subset=counts_subset,
-            genes_subset=genes_subset,
+        # encode_kwargs = {str(k): v for k, v in self.inference_args.items()} if self.inference_args else {}
+
+        mu, theta, z = self.forward(
+            counts=batch[ModelEnum.COUNTS.value],
+            genes=batch[ModelEnum.GENES.value],
+            library_size=batch[ModelEnum.LIBRARY_SIZE.value],
+            counts_subset=batch.get(ModelEnum.COUNTS_SUBSET.value),
+            genes_subset=batch.get(ModelEnum.GENES_SUBSET.value),
         )
-        output: dict[str, torch.Tensor] = {
-            "z_mean_flat": z.flatten(start_dim=1),
+        counts_pred = NegativeBinomialSCVI(mu=mu, theta=theta).sample()
+        inference_outputs: dict[str, torch.Tensor] = {
+            "reconstructed_counts": counts_pred.cpu(),
+            "z": z.cpu(),
         }
-        return output
+        inference_outputs.update({k: batch[k].cpu().numpy() for k in tree_map(lambda x: x.cpu(), batch)})
+        adata = create_anndata_from_inference_output(inference_outputs, self.trainer.datamodule)
+        return adata
 
 
 class LatentDiffusion(BaseModel):
@@ -738,7 +732,7 @@ class LatentDiffusion(BaseModel):
             batch["z_generated_conditional"] = z_outputs[batch_size_single:].flatten(start_dim=1)
             return tree_map(lambda x: x.cpu(), batch)
         elif self.inference_args is not None:
-            from scldm._train_utils import create_anndata_from_inference_output
+            from scldm._utils import create_anndata_from_inference_output
 
             logger.info("Running inference")
             encode_kwargs = {str(k): v for k, v in self.inference_args.items()} if self.inference_args else {}

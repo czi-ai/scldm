@@ -56,8 +56,8 @@ class DataModule(LightningDataModule):
         self.vocabulary_encoder = vocabulary_encoder
         self.adata_attr = adata_attr
         self.adata_key = adata_key
-        self.train_adata_path = Path(train_adata_path)
-        self.test_adata_path = Path(test_adata_path)
+        self.train_adata_path = Path(train_adata_path) if train_adata_path is not None else None
+        self.test_adata_path = Path(test_adata_path) if test_adata_path is not None else None
         self.val_as_test = val_as_test
         self.batch_size = batch_size
         self.test_batch_size = test_batch_size
@@ -82,10 +82,12 @@ class DataModule(LightningDataModule):
         elif self.data_path is not None:
             _, self.n_cells, _ = get_tissue_adata_files(self.data_path, "train")
             self.train_metadata = None
-        else:
+        elif self.train_adata_path is not None:
             train_adata = ad.read_h5ad(self.train_adata_path)
             self.n_cells = train_adata.n_obs
             self.train_metadata = None
+        else:
+            logger.info("No train adata path provided, make sure to set up datamodule for inference")
 
         self._adata_inference = None
 
