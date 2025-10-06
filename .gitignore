@@ -23,3 +23,9 @@ __pycache__/
 # docs
 /docs/generated/
 /docs/_build/
+
+# Local notes
+SETUP_NOTES.md
+/outputs/
+/data/
+*.h5ad

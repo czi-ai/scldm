@@ -1,11 +1,37 @@
+from pathlib import Path
+
 import anndata as ad
 import numpy as np
 import pytest
 
+# Repository root directory (relative to this file)
+REPO_ROOT = Path(__file__).parent.parent
+CONFIG_DIR = REPO_ROOT / "experiments" / "configs"
+
+# Local data paths (only available on specific machine)
+CHECKPOINTS_PATH = Path("/Users/gpalla/Datasets/scg_vae/vae_census")
+DENTATEGYRUS_TRAIN_PATH = Path("/Users/gpalla/Datasets/scg_vae/dentategyrus/dentategyrus_train.h5ad")
+DENTATEGYRUS_TEST_PATH = Path("/Users/gpalla/Datasets/scg_vae/dentategyrus/dentategyrus_test.h5ad")
+
+
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line("markers", "requires_local_data: tests that require local dataset files")
+
 
 @pytest.fixture
-def adata():
-    adata = ad.AnnData(X=np.array([[1.2, 2.3], [3.4, 4.5], [5.6, 6.7]]).astype(np.float32))
-    adata.layers["scaled"] = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]).astype(np.float32)
+def checkpoints_path():
+    """Path to pretrained model checkpoints."""
+    return CHECKPOINTS_PATH
 
-    return adata
+
+@pytest.fixture
+def dentategyrus_paths():
+    """Paths to dentategyrus train/test datasets."""
+    return DENTATEGYRUS_TRAIN_PATH, DENTATEGYRUS_TEST_PATH
+
+
+@pytest.fixture
+def config_dir():
+    """Path to experiments/configs directory."""
+    return CONFIG_DIR

@@ -1,7 +1,10 @@
 from importlib.metadata import version
 
-from . import pl, pp, tl
+from .vae import ScviVAE, TransformerVAE
 
-__all__ = ["pl", "pp", "tl"]
+__all__ = [
+    "ScviVAE",
+    "TransformerVAE",
+]
 
 __version__ = version("scldm")

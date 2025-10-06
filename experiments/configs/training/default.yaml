@@ -1,0 +1,73 @@
+trainer:
+  _target_: pytorch_lightning.Trainer
+  _partial_: true
+  max_steps: 10 # set by num_epochs below
+  enable_progress_bar: false
+  precision: 32 #"bf16-mixed" #16
+  log_every_n_steps: 30
+  val_check_interval: null
+  limit_val_batches: null
+  check_val_every_n_epoch: null
+  sync_batchnorm: true
+  accelerator: "gpu"
+  enable_checkpointing: true
+  deterministic: false
+  gradient_clip_val: 10.
+  gradient_clip_algorithm: norm
+  accumulate_grad_batches: 1
+  # num_sanity_val_steps: 100
+logger:
+  csv:
+    _target_: pytorch_lightning.loggers.csv_logs.CSVLogger
+    save_dir: ${paths.base_experiment_path}/csv_logger
+    name: ${experiment_name}
+    version: null
+    prefix: ""
+  wandb:
+    _target_: pytorch_lightning.loggers.wandb.WandbLogger
+    _partial_: true
+    save_dir: ${paths.base_experiment_path}/wandb_logger
+    project: ${experiment_name}
+    entity: scg-vae
+    name: null
+    job_type: sweep
+    id: null
+    resume: allow
+    resume_from: null
+callbacks:
+  lr_monitor:
+      _target_: pytorch_lightning.callbacks.LearningRateMonitor
+      logging_interval: step
+      log_weight_decay: true
+  model_checkpoints:
+    _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    dirpath: ${paths.base_experiment_path}/checkpoints
+    filename: "{epoch}"
+    save_weights_only: false
+    save_on_train_epoch_end: true
+    save_top_k: -1
+    monitor: val_loss
+    mode: min
+    enable_version_counter: false
+    save_last: true
+  # reconstruction_viz:
+  #   _target_: scldm.viz_callbacks.ReconstructionVisualizationCallback
+  #   max_cells: 100
+  #   device: "cuda"
+
+  # - model_checkpoint:
+  #     _target_: pytorch_lightning.callbacks.ModelCheckpoint
+  #     monitor: val_loss
+  #     save_last: true
+  #     mode: min
+  #     save_top_k: 2
+  #     dirpath: ${paths.output}/checkpoints
+  #     auto_insert_metric_name: true
+  # - early_stopping:
+  #     _target_: pytorch_lightning.callbacks.EarlyStopping
+  #     monitor: val_loss
+  #     min_delta: 1e-2
+  #     patience: 5
+  #     mode: min
+
+num_epochs: 1

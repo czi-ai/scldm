@@ -14,18 +14,38 @@ maintainers = [
 authors = [
   { name = "Giovanni Palla" },
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
   "anndata",
+  "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml@main",
+  "cellxgene-census==1.16.2",
+  "einops",
+  "ema-pytorch==0.7.7",
+  "hydra-core",
+  "leidenalg",
+  "lightning==2.4",
+  "numpy",
+  "omegaconf",
+  "pandas",
+  "pot[backend-torch]",
+  "psutil",
+  "pybiomart",
+  "pyyaml",
+  "rich",
+  "scvi-tools>=1.2",
   # for debug logging (referenced from the issue template)
   "session-info2",
+  "torch==2.7",
+  "torch-optimizer",
+  "torchdyn",
+  "torchmetrics==1.6",
+  "wandb",
 ]
 optional-dependencies.dev = [
   "pre-commit",
@@ -51,6 +71,10 @@ optional-dependencies.test = [
   "coverage>=7.10",
   "pytest",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
 # https://docs.pypi.org/project_metadata/#project-urls
 urls.Documentation = "https://scldm.readthedocs.io/"
 urls.Homepage = "https://github.com/czi-ai/scldm"
@@ -69,7 +93,7 @@ scripts.clean = "git clean -fdX -- {args:docs}"
 # Test the lowest and highest supported Python versions with normal deps
 [[tool.hatch.envs.hatch-test.matrix]]
 deps = [ "stable" ]
-python = [ "3.10", "3.13" ]
+python = [ "3.11", "3.13" ]
 
 # Test the newest supported Python version also with pre-release deps
 [[tool.hatch.envs.hatch-test.matrix]]
@@ -108,22 +132,26 @@ lint.select = [
 ]
 lint.ignore = [
   "B008", # Errors from function calls in argument defaults. These are fine when the result is immutable.
+  # docs stuff
   "D100", # Missing docstring in public module
+  "D101", # Missing docstring in public class
+  "D102", # Missing docstring in public function
+  "D103", # Missing docstring in public method
   "D104", # Missing docstring in public package
   "D105", # __magic__ methods are often self-explanatory, allow missing docstrings
   "D107", # Missing docstring in __init__
   # Disable one in each pair of mutually incompatible rules
-  "D203", # We don’t want a blank line before a class docstring
+  "D203", # We don't want a blank line before a class docstring
   "D213", # <> We want docstrings to start immediately after the opening triple quote
-  "D400", # first line should end with a period [Bug: doesn’t work with single-line docstrings]
+  "D400", # first line should end with a period [Bug: doesn't work with single-line docstrings]
   "D401", # First line should be in imperative mood; try rephrasing
   "E501", # line too long -> we accept long comment lines; formatter gets rid of long code lines
   "E731", # Do not assign a lambda expression, use a def -> lambda expression assignments are convenient
   "E741", # allow I, O, l as variable names -> I is the identity matrix
 ]
 lint.per-file-ignores."*/__init__.py" = [ "F401" ]
-lint.per-file-ignores."docs/*" = [ "I" ]
-lint.per-file-ignores."tests/*" = [ "D" ]
+lint.per-file-ignores."notebooks/*" = [ "B", "C4", "D", "E" ]
+lint.per-file-ignores."tests/*" = [ "D", "F" ]
 lint.pydocstyle.convention = "numpy"
 
 [tool.pytest.ini_options]
