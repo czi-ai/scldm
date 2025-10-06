@@ -1,15 +1,18 @@
 import json
 import math
-import os
 import pickle
 from pathlib import Path
+from typing import Any
 
-import pytorch_lightning as pl
+import anndata as ad
+import numpy as np
+import pandas as pd
 import torch
 from omegaconf import DictConfig
-from pytorch_lightning.callbacks import Callback
-from torch.utils._pytree import tree_map
-from torch.utils.flop_counter import FlopCounterMode
+from scipy import sparse
+
+from scldm.constants import ModelEnum
+from scldm.logger import logger
 
 
 def _get_cosine_schedule_with_warmup_lr_lambda(
@@ -64,65 +67,12 @@ def wsd_schedule(
     return schedule
 
 
-class MaskingSchedulerCallback(Callback):
-    def __init__(
-        self,
-        start_proportion,
-        end_proportion,
-        total_steps,
-        schedule_type="linear",
-    ):
-        self.start_proportion = start_proportion
-        self.end_proportion = end_proportion
-        self.total_steps = total_steps
-        self.current_proportion = start_proportion
-        self.schedule_type = schedule_type
-        self.betalinear30_dist = torch.distributions.Beta(torch.tensor(3.0), torch.tensor(9.0))
-        self.uniform_dist = torch.distributions.uniform.Uniform(0, 1)
-
-    def _get_betalinear30_sample(self):
-        if self.uniform_dist.sample().item() < 0.8:
-            return self.betalinear30_dist.sample().item()
-        else:
-            return self.uniform_dist.sample().item()
-
-    def _get_linear_sample(self):
-        return torch.distributions.uniform.Uniform(0, 1).sample().item()
-
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
-        # global_step = trainer.global_step
-        # progress = min(global_step / self.total_steps, 1.0)
-
-        if self.schedule_type == "linear":
-            self.current_proportion = self._get_linear_sample()
-        elif self.schedule_type == "betalinear30":
-            self.current_proportion = self._get_betalinear30_sample()
-        else:
-            raise ValueError(f"Invalid schedule type: {self.schedule_type}")
-
-        self.current_proportion = max(0.0, min(0.999, self.current_proportion))
-        pl_module.mask_proportion = self.current_proportion
+class MaskingSchedulerCallback:  # removed unused Callback-based implementation
+    pass
 
 
-def world_info_from_env():
-    # from https://github.com/mlfoundations/open_clip/blob/main/src/training/distributed.py
-    local_rank = 0
-    for v in ("LOCAL_RANK", "MPI_LOCALRANKID", "SLURM_LOCALID", "OMPI_COMM_WORLD_LOCAL_RANK"):
-        if v in os.environ:
-            local_rank = int(os.environ[v])
-            break
-    global_rank = 0
-    for v in ("RANK", "PMI_RANK", "SLURM_PROCID", "OMPI_COMM_WORLD_RANK"):
-        if v in os.environ:
-            global_rank = int(os.environ[v])
-            break
-    world_size = 1
-    for v in ("WORLD_SIZE", "PMI_SIZE", "SLURM_NTASKS", "OMPI_COMM_WORLD_SIZE"):
-        if v in os.environ:
-            world_size = int(os.environ[v])
-            break
-
-    return local_rank, global_rank, world_size
+def world_info_from_env():  # unused
+    return 0, 0, 1
 
 
 def sort_h5ad_files(path: Path) -> list[str]:
@@ -166,42 +116,16 @@ def get_tissue_adata_files(base_path: Path, split: str = "train") -> tuple[list[
     return sorted(all_files), total_cells, shard_size.pop()
 
 
-def get_flops(
-    datamodule: pl.LightningDataModule,
-    module: pl.LightningModule,
-    with_backward: bool = True,
-):
-    # not working, see https://github.com/pytorch/pytorch/issues/134385
-    datamodule.setup("test")
-    dl = datamodule.test_dataloader()
-    batch = next(iter(dl))
-    batch_ = module.tokens_and_masks(batch)
-    batch_.pop("local_non_padding_tokens")
-    module.transformer.to("cuda:0")
-    module.count_head.to("cuda:0")
-    batch_ = tree_map(lambda x: x.to("cuda:0"), batch_)
-    batch_ = {k: v[0, ...].unsqueeze(0) for k, v in batch_.items()}
-
-    flop_counter = FlopCounterMode(mods=module, display=False, depth=None)
-    with flop_counter:
-        if with_backward:
-            module(batch_).sum().backward()
-        else:
-            module(batch_)
-    total_flops = flop_counter.get_total_flops()
-    return total_flops
+def get_flops(*args, **kwargs):  # unused
+    raise NotImplementedError
 
 
-def get_inducing_points(n_inducing_points: int):
-    n_inducing_points = (
-        [n_inducing_points] if isinstance(n_inducing_points, int) else [int(x) for x in n_inducing_points.split("-")]
-    )
-    return n_inducing_points
+def get_inducing_points(n_inducing_points: int):  # unused
+    return [n_inducing_points] if isinstance(n_inducing_points, int) else []
 
 
-def get_n_embed_inducing_points(n_embed: int, n_inducing_points: int):
-    n_embed_list = [n_embed * (2**i) for i in range(len(n_inducing_points) + 1)]
-    return n_embed_list
+def get_n_embed_inducing_points(n_embed: int, n_inducing_points: int):  # unused
+    return [n_embed]
 
 
 def remap_config(cfg):
@@ -241,28 +165,8 @@ class RemapPickle:
 remap_pickle = RemapPickle()
 
 
-def process_generation(generation_output: list[dict[str, torch.Tensor]]) -> tuple[torch.Tensor, torch.Tensor]:
-    import anndata as ad
-    from scipy import sparse
-
-    generated_counts = torch.cat(
-        [
-            generation_output[i][f"{ModelEnum.COUNTS.value}_generated"]
-            for i in range(len(generation_output))
-            if generation_output[i] is not None
-        ]
-    )
-    true_counts = torch.cat(
-        [
-            generation_output[i][ModelEnum.COUNTS.value]
-            for i in range(len(generation_output))
-            if generation_output[i] is not None
-        ]
-    )
-
-    adata_true = ad.AnnData(sparse.csr_matrix(true_counts.numpy()))
-    adata_generated = ad.AnnData(sparse.csr_matrix(generated_counts.numpy()))
-    return adata_true, adata_generated
+def process_generation(generation_output: list[dict[str, torch.Tensor]]):  # unused
+    raise NotImplementedError
 
 
 def process_generation_output(
@@ -323,27 +227,8 @@ def process_generation_output(
     return adata
 
 
-def create_anndata_from_inference_output(
-    output: dict[str, torch.Tensor],
-    datamodule: Any,
-) -> ad.AnnData:
-    z_sample = output["z_sample"].numpy()
-    z_sample_flat = output["z_sample_flat"].numpy()
-    generated_counts = sparse.csr_matrix(output["reconstructed_counts"].numpy())
-    genes = output[f"{ModelEnum.GENES.value}"][0, :]
-    var_names = datamodule.vocabulary_encoder.decode_genes(genes)
-    obs = {
-        k: datamodule.vocabulary_encoder.decode_metadata(output[k].numpy(), k)
-        for k in datamodule.vocabulary_encoder.labels.keys()
-    }
-
-    n_cells = len(z_sample)
-    obs = pd.DataFrame(obs, index=np.arange(n_cells).astype(str))
-
-    adata = ad.AnnData(X=generated_counts, obs=obs, obsm={"z_sample": z_sample, "z_sample_flat": z_sample_flat})
-    adata.var_names = var_names
-    adata.layers["counts"] = adata.X.copy()
-    return adata
+def create_anndata_from_inference_output(output: dict[str, torch.Tensor], datamodule: Any):  # unused
+    raise NotImplementedError
 
 
 def process_inference_output(

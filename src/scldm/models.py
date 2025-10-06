@@ -982,35 +982,11 @@ class VAEScvi(BaseModel):
         z_sample_masked: torch.Tensor | None = None,
     ) -> dict[str, Any]:
         recon_loss = -conditional_likelihood.log_prob(counts)
-        # kl_loss = self.kl_weight * (variational_posterior.log_prob(z_sample) - self.vae_model.prior.log_prob(z_sample))
-
-        if conditional_likelihood_masked is not None:
-            recon_loss_masked = -conditional_likelihood_masked.log_prob(counts)
-            # kl_loss_masked = self.kl_weight * (
-            #     variational_posterior_masked.log_prob(z_sample_masked) - self.vae_model.prior.log_prob(z_sample_masked)
-            # )
-
-            recon_loss = recon_loss + recon_loss_masked
-            # kl_loss = kl_loss + kl_loss_masked
-
-            cr_loss = 0.5 * torch.sum(
-                2 * torch.log(variational_posterior.scale / variational_posterior_masked.scale)
-                - 1
-                + (
-                    variational_posterior_masked.scale**2
-                    + (variational_posterior_masked.loc - variational_posterior.loc) ** 2
-                )
-                / (variational_posterior.scale**2),
-                dim=1,
-            )
-            cr_loss = self.cr_weight * cr_loss
-        else:
-            cr_loss = torch.zeros_like(recon_loss)
+        kl_loss = self.kl_weight * (variational_posterior.log_prob(z_sample) - self.vae_model.prior.log_prob(z_sample))
 
         output = {
             LossEnum.LLH_LOSS.value: recon_loss.sum(dim=1).mean(),
-            # LossEnum.KL_LOSS.value: kl_loss.sum(dim=1).mean(),
-            LossEnum.CR_LOSS.value: cr_loss.mean(),
+            LossEnum.KL_LOSS.value: kl_loss.sum(dim=1).mean(),
         }
 
         for k, v in output.items():
@@ -1042,21 +1018,9 @@ class VAEScvi(BaseModel):
             counts_subset=counts_subset,
             genes_subset=genes_subset,
         )
-        if self.masking_prop > 0:
-            conditional_likelihood_masked, variational_posterior_masked, z_masked = self.forward(
-                counts=counts,
-                genes=genes,
-                library_size=library_size,
-                condition=condition,
-                counts_subset=counts_subset,
-                genes_subset=genes_subset,
-                masking_prop=self.masking_prop,
-                mask_token_idx=self.mask_token_idx,
-            )
-        else:
-            conditional_likelihood_masked = None
-            variational_posterior_masked = None
-            z_masked = None
+        conditional_likelihood_masked = None
+        variational_posterior_masked = None
+        z_masked = None
 
         loss_output = self.loss(
             counts=counts,
@@ -1140,23 +1104,11 @@ class VAEScvi(BaseModel):
         counts_pred_zeros = (counts_pred == 0).float()
         counts_true_zeros = (counts == 0).float()
 
-        # active_units = torch.sum(torch.var(variational_posterior.mean, dim=0) > 0.01)
-
-        # metrics[f"{stage}_active_units"] = active_units
         metrics[f"{stage}_zeros_accuracy"] = (counts_pred_zeros == counts_true_zeros).float().mean()
 
         for k, fn in self.metric_fns.items():
             output = fn(counts_pred_scaled, counts_true_scaled)
             metrics[f"{stage}_{k}"] = torch.nanmean(output)
-
-        # # for k, fn in self.mmd_metric_fns.items():
-        # #     if "rbf" in k:
-        # #         output = fn(counts_pred_scaled, counts_true_scaled)
-        # #     elif "tanimoto" in k:
-        # #         output = fn(counts_pred_zeros, counts_true_zeros)
-        # #     else:
-        # #         output = fn(counts_pred, counts)
-        # #     metrics[f"{stage}_r{k}"] = torch.nanmean(output)
 
         return metrics
 
@@ -1218,13 +1170,7 @@ class VAEScvi(BaseModel):
             counts_subset=counts_subset,
             genes_subset=genes_subset,
         )
-        z = variational_posterior  # .sample((n_samples,))
-        # output: dict[str, torch.Tensor] = {
-        #     "z_sample": z.mean(dim=(0, 2)),
-        #     "z_sample_flat": z.mean(dim=0).flatten(start_dim=1),
-        #     "z_mean": variational_posterior.mean.mean(dim=1),
-        #     "generated_counts": nb.sample(),
-        # }
+        z = variational_posterior.sample((n_samples,))
         output: dict[str, torch.Tensor] = {
             "z_mean_flat": z.flatten(start_dim=1),
         }
