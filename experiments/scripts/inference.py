@@ -24,6 +24,7 @@ def train(cfg) -> None:
     from scldm.logger import logger
 
     torch.set_float32_matmul_precision("high")
+    torch._dynamo.config.capture_scalar_outputs = True
 
     pl.seed_everything(cfg.seed)
     logger.info("Single-process inference mode")
@@ -54,11 +55,13 @@ def train(cfg) -> None:
     logger.info("Instantiating callbacks and loggers from config...")
     callbacks_list = []
     for cb_cfg in getattr(cfg.training, "callbacks", {}).values():
-        callbacks_list.append(hydra.utils.instantiate(cb_cfg))
+        # Force full instantiation (avoid functools.partial)
+        callbacks_list.append(hydra.utils.instantiate(cb_cfg, _partial_=False))
 
     loggers_list = []
     for lg_cfg in getattr(cfg.training, "logger", {}).values():
-        loggers_list.append(hydra.utils.instantiate(lg_cfg))
+        # Force full instantiation (avoid functools.partial)
+        loggers_list.append(hydra.utils.instantiate(lg_cfg, _partial_=False))
 
     trainer_: Callable[..., Trainer] = hydra.utils.instantiate(cfg.training.trainer)  # partial
 
@@ -115,6 +118,7 @@ def train(cfg) -> None:
             pathlib.Path(cfg.inference_path)
             / f"{cfg.datamodule.dataset}_{inference_type}_{cfg.dataset_generation_idx}.h5ad"
         )
+        adata.write(save_path)
 
 
 @hydra.main(

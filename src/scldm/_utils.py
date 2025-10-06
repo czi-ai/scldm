@@ -199,21 +199,41 @@ def process_inference_output(
     datamodule: Any,
 ) -> ad.AnnData:
     logger.info("Processing inference output")
-    adata = ad.concat(output)
+    # Extract counts and latent representations
+    counts_sparse = sparse.vstack([sparse.csr_matrix(o[f"{ModelEnum.COUNTS.value}"].numpy()) for o in output])
+    z = np.vstack([o["z"].numpy() for o in output])
 
-    # sc.pp.normalize_total(adata)
-    # sc.pp.log1p(adata)
-    # sc.pp.pca(adata)
-    # sc.pp.neighbors(adata)
-    # sc.tl.umap(adata)
+    genes = output[0][f"{ModelEnum.GENES.value}"][0, :]
+    var_names = datamodule.vocabulary_encoder.decode_genes(genes)
 
-    # # process latents
-    # adata.obsm["z_sample_flat_pca"] = sc.pp.pca(adata.obsm["z_sample_flat"])
+    # Only decode labels that are present in the output; skip missing ones
+    available_keys = set.intersection(*[set(o.keys()) for o in output]) if output else set()
+    desired_keys = set(datamodule.vocabulary_encoder.labels.keys())
+    present_label_keys = sorted(desired_keys & available_keys)
+    missing_label_keys = sorted(desired_keys - available_keys)
+    if missing_label_keys:
+        logger.info(f"[inference_output] Skipping missing label columns in outputs: {missing_label_keys}")
 
-    # sc.pp.neighbors(adata, use_rep="z_sample", key_added="z_sample_neighbors")
-    # sc.pp.neighbors(adata, use_rep="z_sample_flat_pca", key_added="z_sample_flat_pca_neighbors", n_neighbors=10)
+    # Stack label tensors/arrays robustly, then decode
+    obs = {}
+    for k in present_label_keys:
+        parts = []
+        for o in output:
+            v = o[k]
+            if torch.is_tensor(v):
+                parts.append(v.detach().cpu().numpy())
+            else:
+                parts.append(np.asarray(v))
+        stacked = np.concatenate(parts, axis=0)
+        obs[k] = datamodule.vocabulary_encoder.decode_metadata(stacked, k)
 
-    # sc.tl.umap(adata, neighbors_key="z_sample_neighbors", key_added="z_sample_neighbors_umap")
-    # sc.tl.umap(adata, neighbors_key="z_sample_flat_pca_neighbors", key_added="z_sample_flat_pca_neighbors_umap")
+    del output
+
+    n_cells = counts_sparse.shape[0]
+    obs_df = pd.DataFrame(obs, index=np.arange(n_cells).astype(str))
+    obs_df["dataset"] = "inference"
+
+    adata = ad.AnnData(X=counts_sparse, obs=obs_df, obsm={"z": z})
+    adata.var_names = var_names
 
     return adata

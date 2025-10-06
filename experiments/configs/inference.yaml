@@ -13,6 +13,7 @@ datamodule:
   dataset: dentate_gyrus
   datamodule:
     sample_genes: expressed
+    test_batch_size: 128 # for small datasets
 
 training:
   trainer:
@@ -21,10 +22,10 @@ training:
 model:
   module:
     compile: false
-    generation_args: null
-      # guidance_weight: ${datamodule.dataset_params.${datamodule.dataset}.guidance_weight}
-    inference_args:
-      n_samples: 1
+    generation_args:
+      guidance_weight: ${datamodule.dataset_params.${datamodule.dataset}.guidance_weight}
+    inference_args: null
+      # n_samples: 1
   batch_size: 256
   test_batch_size: 256
 

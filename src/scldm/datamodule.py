@@ -22,7 +22,7 @@ from torch.utils.data import DataLoader
 
 from scldm._utils import get_tissue_adata_files, sort_h5ad_files
 from scldm.constants import ModelEnum
-from scldm.encoder import VocabularyEncoder, VocabularyEncoderSimplified
+from scldm.encoder import VocabularyEncoderSimplified
 from scldm.logger import logger
 
 
@@ -242,7 +242,7 @@ class DataModule(LightningDataModule):
                 self._setup_prediction_only()
                 return
             else:
-                if self.test_adata is None:
+                if not hasattr(self, "test_adata") or self.test_adata is None:
                     self.test_adata = ad.read_h5ad(self.test_adata_path)
                 self._setup_prediction_from_test()
                 return
@@ -630,7 +630,7 @@ def collate_fn(
 def tokenize_cells(
     cell: np.ndarray,
     var_names: Sequence[str],
-    encoder: VocabularyEncoder | VocabularyEncoderSimplified,
+    encoder: VocabularyEncoderSimplified,
     genes_seq_len: int,
     sample_genes: Literal["random", "weighted", "expressed", "expressed_zero", "none"],
     gene_tokens_key: str = ModelEnum.GENES.value,

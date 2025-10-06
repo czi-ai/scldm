@@ -364,7 +364,7 @@ class VAE(BaseModel):
         counts_subset = batch.get(ModelEnum.COUNTS_SUBSET.value, None)
         genes_subset = batch.get(ModelEnum.GENES_SUBSET.value, None)
 
-        mu, theta, z = self.forward(
+        _, _, z = self.forward(
             counts=counts,
             genes=genes,
             library_size=library_size,
