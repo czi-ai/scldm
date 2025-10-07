@@ -134,18 +134,6 @@ class Encoder(nn.Module):
             nn.LayerNorm(n_embed_latent, eps=layernorm_eps, elementwise_affine=False),
         )
 
-    def _init_weights(self, module):
-        def _basic_init(module):
-            if isinstance(module, nn.Linear):
-                torch.nn.init.xavier_uniform_(module.weight)
-                if module.bias is not None:
-                    nn.init.constant_(module.bias, 0)
-
-        self.apply(_basic_init)
-        if isinstance(self.pos_embed, nn.Parameter):
-            pos_embed = get_1d_sincos_pos_embed(self.n_embed, self.latent_dim)
-            self.pos_embed.data.copy_(torch.from_numpy(pos_embed).float().unsqueeze(0))
-
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.ca_layer(x)
         if isinstance(self.pos_embed, nn.Parameter):
@@ -208,12 +196,6 @@ class Decoder(nn.Module):
             layernorm_eps=layernorm_eps,
             use_adaln=use_adaln,
         )
-
-    def _init_weights(self, module):
-        if isinstance(module, nn.Linear):
-            torch.nn.init.xavier_uniform_(module.weight)
-            if module.bias is not None:
-                nn.init.constant_(module.bias, 0)
 
     def forward(
         self, x: torch.Tensor, genes: torch.Tensor, condition: tuple[torch.Tensor, torch.Tensor] | None = None

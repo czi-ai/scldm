@@ -664,8 +664,6 @@ class LatentDiffusion(BaseModel):
     def shared_step(self, batch, batch_idx, stage: str, ema: bool = False) -> dict[str, Any]:
         counts = batch[ModelEnum.COUNTS.value]
         genes = batch[ModelEnum.GENES.value]
-        # counts_subset = batch[ModelEnum.COUNTS_SUBSET.value]
-        # genes_subset = batch[ModelEnum.GENES_SUBSET.value]
 
         counts_subset = batch.get(ModelEnum.COUNTS_SUBSET.value, None)
         genes_subset = batch.get(ModelEnum.GENES_SUBSET.value, None)
@@ -1163,7 +1161,7 @@ class VAEScvi(BaseModel):
         batch: dict[str, torch.Tensor],
         batch_idx: int,
     ) -> dict[str, torch.Tensor]:
-        from scldm._train_utils import create_anndata_from_inference_output
+        from scldm._utils import create_anndata_from_inference_output
 
         outputs = self.inference(batch)
         batch.update(outputs)
@@ -1171,10 +1169,6 @@ class VAEScvi(BaseModel):
             return tree_map(lambda x: x.cpu(), batch)
         else:
             return create_anndata_from_inference_output(tree_map(lambda x: x.cpu(), batch), self.trainer.datamodule)
-        # return tree_map(
-        #     lambda x: x.cpu() if isinstance(x, torch.Tensor) else torch.from_numpy(x).cpu(),
-        #     batch
-        # )
 
     @torch.no_grad()
     def sample(

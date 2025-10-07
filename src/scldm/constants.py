@@ -17,7 +17,6 @@ class DatasetEnum(StrEnum):
     DISEASE = "disease"
     DEVELOPMENT_STAGE = "development_stage"
     CELL_TYPE = "cell_type"
-    SUSPENSION = "suspension_type"
 
 
 class ModelEnum(StrEnum):

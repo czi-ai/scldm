@@ -73,9 +73,24 @@ def test_end_to_end_load(dentategyrus_paths, checkpoints_path, config_dir):
 
     print("\n=== Loading DataModule ===")
     # Load datamodule configs
-    paths_config = OmegaConf.load(config_dir / "paths" / "default.yaml")
+    base_paths = OmegaConf.load(config_dir / "paths" / "base.yaml")
+    dataset_paths = OmegaConf.load(config_dir / "paths" / "datasets.yaml")
     datamodule_config = OmegaConf.load(config_dir / "datamodule" / "default.yaml")
+
+    # Merge base and dataset paths, then wrap under "paths" namespace as expected by hydra composition
+    paths_config = OmegaConf.merge(base_paths, dataset_paths)
+    paths_config = OmegaConf.create({"paths": paths_config})
+
     config = OmegaConf.merge(paths_config, datamodule_config)
+
+    # Set up required keys for interpolation resolution
+    if "dataset" in config and "datamodule" in config:
+        config.datamodule.dataset = config.dataset
+    if "dataset_params" in config and "datamodule" in config:
+        config.datamodule.dataset_params = config.dataset_params
+
+    # OmegaConf.resolve will handle all interpolations in the full context
+    OmegaConf.resolve(config)
 
     # Instantiate datamodule
     datamodule = hydra.utils.instantiate(config.datamodule)

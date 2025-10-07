@@ -4,44 +4,10 @@ import torch.nn as nn
 from scvi.distributions import NegativeBinomial as NegativeBinomialSCVI
 from torch.distributions import Distribution
 
-from scldm.distributions import (
-    MaskedZeroTruncatedNegativeBinomialSCVI,
-    TruncatedDiscretizedLogistic,
-    TruncatedDiscretizedNormal,
-)
-from scldm.layers import NORM_LAYERS
-
 
 ###########################
 #     GAUSSIAN LAYERS     #
 ###########################
-class GaussianTransformerLayer(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x: torch.Tensor) -> torch.distributions.Distribution:
-        loc, log_scale = torch.chunk(x, 2, dim=-1)  # chunk over last dim
-        loc = nn.functional.hardtanh(loc, min_val=-4.0, max_val=4.0)
-        log_scale = nn.functional.hardtanh(log_scale, min_val=-7.0, max_val=5.0)
-        scale = torch.exp(log_scale)
-        return dist.Normal(loc, scale)
-
-    def sample(self, x: torch.Tensor) -> torch.Tensor:
-        distribution = self.forward(x)
-        return distribution.rsample()
-
-    def log_prob(self, x: torch.Tensor, loc: torch.Tensor | None, scale: torch.Tensor | None) -> torch.Tensor:
-        if (loc is None) or (scale is None):
-            distribution = self.forward(x)
-        else:
-            distribution = dist.Normal(loc, scale)
-        log_p = distribution.log_prob(x)
-        return log_p
-
-    def loss(self, x: torch.Tensor, loc: torch.Tensor | None, scale: torch.Tensor | None) -> torch.Tensor:
-        return self.log_prob(x, loc, scale)
-
-
 class GaussianLinearLayer(nn.Module):
     def __init__(
         self,
@@ -80,29 +46,6 @@ class GaussianLinearLayer(nn.Module):
 ############################
 #     NBinomial LAYERS     #
 ############################
-def exp_linear(z: torch.Tensor, t: float = 10.0) -> torch.Tensor:
-    exp_t = torch.exp(torch.as_tensor(t, device=z.device, dtype=z.dtype))
-    # left branch
-    left = torch.exp(z)
-    # right branch (linear with slope exp(t), anchored at z=t)
-    right = exp_t * (1.0 + (z - t))
-    return torch.where(z <= t, left, right)
-
-
-class RestScalarAttention(nn.Module):
-    def __init__(self, d_model: int):
-        super().__init__()
-        self.att_proj = nn.Linear(d_model, 1)  # scalar score per rest token
-        self.rest_head = nn.Sequential(nn.SiLU(), nn.Linear(d_model, 1))  # pooled -> logit with nonlinearity
-
-    def forward(self, rest_embs: torch.Tensor) -> torch.Tensor:
-        scores = self.att_proj(rest_embs).squeeze(-1)  # B, notG, E
-        att = torch.softmax(scores, dim=1)  # B, notG, 1
-        pooled = torch.bmm(att.unsqueeze(1), rest_embs).squeeze(1)  # B, E
-        logit_rest = self.rest_head(pooled)  # B, 1
-        return logit_rest
-
-
 class NegativeBinomialTransformerLayer(nn.Module):
     def __init__(
         self,
@@ -186,127 +129,3 @@ class NegativeBinomialLinearLayer(nn.Module):
     def log_prob(self, x: torch.Tensor, total_counts: torch.Tensor) -> torch.Tensor:
         distribution = self.forward(x, total_counts)
         return distribution.log_prob(x)
-
-
-class MaskedNegativeBinomialLinearLayer(nn.Module):
-    def __init__(
-        self,
-        *,
-        n_genes: int,
-        shared_theta: bool = False,
-        epsilon: float = 1e-8,
-    ):
-        super().__init__()
-        self.epsilon = epsilon
-        self.shared_theta = shared_theta
-
-        self.mu = nn.Linear(n_genes, n_genes, bias=True)
-        if self.shared_theta:
-            # Create parameter on the same device as the model
-            self.register_parameter(
-                "theta", nn.Parameter(torch.ones(n_genes, device=next(self.parameters()).device), requires_grad=True)
-            )
-        else:
-            self.theta: nn.Linear = nn.Linear(n_genes, n_genes, bias=True)
-        self.logits = nn.Linear(n_genes, n_genes, bias=True)
-        self.softplus = nn.Softplus()
-
-    def forward(
-        self,
-        x: torch.Tensor,
-        total_counts: torch.Tensor,
-    ) -> Distribution:
-        mu = self.mu(x)
-        if isinstance(self.theta, nn.Parameter):
-            theta = self.softplus(self.theta)
-        else:
-            theta = self.softplus(self.theta(x))
-        logits = self.logits(x)
-        mu = nn.functional.softmax(mu, dim=1)
-        mu = mu * total_counts
-        return MaskedZeroTruncatedNegativeBinomialSCVI(mu=mu, theta=theta, logits=logits)
-
-    def log_prob(self, x: torch.Tensor, total_counts: torch.Tensor) -> torch.Tensor:
-        distribution = self.forward(x, total_counts)
-        return distribution.log_prob(x)
-
-
-class TruncatedDiscretizedGaussianTransformerLayer(nn.Module):
-    def __init__(
-        self,
-        n_embed: int | None = None,
-        norm_layer: str = "layernorm",
-        layernorm_eps: float = 1e-5,
-    ):
-        super().__init__()
-        self.ln = NORM_LAYERS[norm_layer](n_embed, eps=layernorm_eps)
-        self.params = nn.Linear(n_embed, 2, bias=True)
-
-    def forward(self, x: torch.Tensor, total_counts: torch.Tensor | None = None) -> torch.distributions.Distribution:
-        x = self.ln(x)
-        loc, log_scale = torch.chunk(self.params(x), 2, dim=-1)  # chunk over last dim
-        loc, log_scale = loc.squeeze(-1), log_scale.squeeze(-1)  # B x G
-        loc = nn.functional.softplus(loc)
-        log_scale = nn.functional.hardtanh(log_scale, min_val=-7.0, max_val=5.0)
-        scale = torch.exp(log_scale)
-        return TruncatedDiscretizedNormal(loc, scale)
-
-    def log_prob(self, x: torch.Tensor) -> torch.Tensor:
-        distribution = self.forward(x)
-        return distribution.log_prob(x)
-
-
-class TruncatedDiscretizedLogisticTransformerLayer(nn.Module):
-    def __init__(
-        self,
-        n_embed: int | None = None,
-        norm_layer: str = "layernorm",
-        layernorm_eps: float = 1e-5,
-    ):
-        super().__init__()
-        self.ln = NORM_LAYERS[norm_layer](n_embed, eps=layernorm_eps)
-        self.params = nn.Linear(n_embed, 2, bias=True)
-
-    def forward(self, x: torch.Tensor, total_counts: torch.Tensor | None = None) -> torch.distributions.Distribution:
-        x = self.ln(x)
-        loc, log_scale = torch.chunk(self.params(x), 2, dim=-1)  # chunk over last dim
-        loc, log_scale = loc.squeeze(-1), log_scale.squeeze(-1)  # B x G
-        loc = nn.functional.softplus(loc)
-        log_scale = nn.functional.hardtanh(log_scale, min_val=-7.0, max_val=5.0)
-        scale = torch.exp(log_scale)
-        return TruncatedDiscretizedLogistic(loc, scale)
-
-    def log_prob(self, x: torch.Tensor) -> torch.Tensor:
-        distribution = self.forward(x)
-        return distribution.log_prob(x)
-
-
-class PossionTransformerLayer(nn.Module):
-    def __init__(
-        self,
-        *,
-        n_genes: int,
-        n_embed: int | None = None,
-        norm_layer: str = "layernorm",
-        layernorm_eps: float = 1e-8,
-        eps_: float = 1e-6,
-    ):
-        super().__init__()
-
-        self.params = nn.Linear(n_embed, 1, bias=True)
-
-    def forward(
-        self,
-        counts: torch.Tensor,
-        genes: torch.Tensor,
-        library_size: torch.Tensor,
-    ) -> Distribution:
-        mu = self.params(counts)
-        mu = mu.squeeze(-1)
-        mu = nn.functional.softmax(mu, dim=1)
-        mu = mu * library_size
-        return dist.Poisson(mu)
-
-    def log_prob(self, counts: torch.Tensor, genes: torch.Tensor, total_counts: torch.Tensor) -> torch.Tensor:
-        distribution = self.forward(counts, genes, total_counts)
-        return distribution.log_prob(counts)
