@@ -13,87 +13,16 @@ from typing import Any, Literal
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.nn.attention.flex_attention import _score_mod_signature, flex_attention
-
-
-def generate_alibi_bias(H: int) -> _score_mod_signature:
-    """Returns an alibi bias score_mod given the number of heads H
-
-    Args:
-        H: number of heads
-
-    Returns
-    -------
-        alibi_bias: alibi bias score_mod
-    """
-
-    def alibi_mod(score, b, h, q_idx, kv_idx):
-        scale = torch.exp2(-((h + 1) * 8.0 / H))
-        bias = (q_idx - kv_idx) * scale
-        return score + bias
-
-    return alibi_mod
-
-
-def relative_positional(score, b, h, q_idx, kv_idx):
-    return score + (q_idx - kv_idx)
-
+from torch.nn.attention.flex_attention import flex_attention
 
 SCORE_MOD = {
-    "rpe": relative_positional,
-    "alibi": generate_alibi_bias,
     "noop": None,
 }
 
 
-class SetNorm(nn.Module):
-    """
-    SetNorm for permutation invariant normalization with mask support.
-
-    Adapted from: https://github.com/rajesh-lab/deep_permutation_invariant/blob/main/models/norms.py
-    """
-
-    def __init__(self, normalized_shape: int, eps: float = 1e-5, **kwargs):
-        super().__init__()
-        self.weights = nn.Parameter(torch.ones(normalized_shape))
-        self.biases = nn.Parameter(torch.zeros(normalized_shape))
-        self.eps = eps
-
-        torch.nn.init.constant_(self.weights, 1.0)
-        torch.nn.init.constant_(self.biases, 0.0)
-
-    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
-        _, _, D = x.shape
-
-        if mask is None:
-            mask = torch.ones_like(x[..., 0], dtype=torch.bool)
-
-        valid_elements = mask.sum(dim=1, keepdim=True) * D
-
-        means = (x * mask.unsqueeze(-1)).sum(dim=[1, 2], keepdim=True) / valid_elements.view(-1, 1, 1)
-        std = torch.sqrt(
-            ((x - means).square() * mask.unsqueeze(-1)).sum(dim=[1, 2], keepdim=True)
-            / (valid_elements.view(-1, 1, 1) + self.eps)
-        )
-
-        return torch.nn.functional.linear((x - means) / std, torch.diag_embed(self.weights), self.biases)
-
-
 NORM_LAYERS = {
     "layernorm": nn.LayerNorm,
-    "setnorm": SetNorm,
 }
-
-
-def asinh_sqrt_transform(genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
-    """Check if using"""
-    counts = torch.asinh(torch.sqrt(counts + 1.0))
-    return genes * counts
-
-
-def sqrt_transform(genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
-    counts = torch.sqrt(counts + 1.0)
-    return genes * counts
 
 
 def log1p_transform(genes: torch.Tensor, counts: torch.Tensor, zero_encoding: bool = False) -> torch.Tensor:
@@ -102,49 +31,9 @@ def log1p_transform(genes: torch.Tensor, counts: torch.Tensor, zero_encoding: bo
     return genes * torch.log1p(counts)
 
 
-class Projection(nn.Module):
-    def __init__(self, n_embed: int):
-        super().__init__()
-        self.count_embedding = nn.Linear(1, n_embed)
-
-    def forward(self, genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
-        counts = self.count_embedding(counts)
-        return genes + counts
-
-
-class ProjectionConcat(nn.Module):
-    def __init__(self, n_embed: int):
-        super().__init__()
-        self.mix = nn.Linear(n_embed * 2, n_embed)
-
-    def forward(self, genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
-        # More efficient: expand counts to match genes shape
-        log_counts = torch.log1p(counts).expand(-1, -1, genes.shape[-1])
-        return self.mix(torch.cat([genes, log_counts], dim=-1))
-
-
-class SoftBinProjection(nn.Module):
-    def __init__(self, n_embed: int, n_bins: int = 10, hidden_dim: int = 64):
-        super().__init__()
-        self.n_bins = n_bins
-        self.mlp_count = nn.Sequential(nn.Linear(1, hidden_dim), nn.SiLU(), nn.Linear(hidden_dim, self.n_bins))
-        self.bin_embeddings = nn.Parameter(torch.randn(self.n_bins, n_embed))
-
-    def forward(self, genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
-        bin_logits = self.mlp_count(counts)  # (..., n_bins)
-        bin_weights = torch.softmax(bin_logits, dim=-1)  # (..., n_bins)
-        count_embedding = torch.einsum("...k,kd->...d", bin_weights, self.bin_embeddings)
-        return genes + count_embedding
-
-
 PROJ_FUNC = {
     "log1p": log1p_transform,
     "log1pzero": partial(log1p_transform, zero_encoding=True),
-    "anscombe": asinh_sqrt_transform,
-    "sqrt": sqrt_transform,
-    "proj": Projection,
-    "projconcat": ProjectionConcat,
-    "softbin": SoftBinProjection,
 }
 
 

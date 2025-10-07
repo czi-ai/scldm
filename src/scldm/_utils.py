@@ -85,9 +85,6 @@ def get_tissue_adata_files(base_path: Path, split: str = "train") -> tuple[list[
                     shard_size.append(metadata["shard_size"])
 
                 h5ad_files = sort_h5ad_files(split_dir)
-                # print(split_dir)
-                # print(h5ad_files[0])
-                # print(h5ad_files[-1])
 
                 # Remove the last file (highest numbered)
                 if h5ad_files:

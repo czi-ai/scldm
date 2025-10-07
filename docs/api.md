@@ -1,39 +1,44 @@
-# API
+# API Reference
 
-## Preprocessing
+## Core VAE Models
+
+The core VAE architectures for single-cell gene expression modeling.
 
 ```{eval-rst}
-.. module:: scldm.pp
+.. module:: scldm
 .. currentmodule:: scldm
 
 .. autosummary::
     :toctree: generated
 
-    pp.basic_preproc
-    pp.elaborate_example
+    TransformerVAE
 ```
 
-## Tools
+## Lightning Training Modules
+
+PyTorch Lightning modules for training VAE and diffusion models.
 
 ```{eval-rst}
-.. module:: scldm.tl
-.. currentmodule:: scldm
+.. module:: scldm.models
+.. currentmodule:: scldm.models
 
 .. autosummary::
     :toctree: generated
 
-    tl.basic_tool
+    VAE
+    LatentDiffusion
 ```
 
-## Plotting
+## Data Loading
+
+Data module for loading and preprocessing single-cell data.
 
 ```{eval-rst}
-.. module:: scldm.pl
-.. currentmodule:: scldm
+.. module:: scldm.datamodule
+.. currentmodule:: scldm.datamodule
 
 .. autosummary::
     :toctree: generated
 
-    pl.basic_plot
-    pl.BasicClass
+    DataModule
 ```
