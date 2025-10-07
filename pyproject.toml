@@ -51,8 +51,9 @@ optional-dependencies.dev = [
   "pre-commit",
   "twine>=4.0.2",
 ]
-optional-dependencies.doc = [
+optional-dependencies.docs = [
   "docutils>=0.8,!=0.18.*,!=0.19.*",
+  "hatch",  # so we can use the tool.hatch.envs.docs.scripts commands
   "ipykernel",
   "ipython",
   "myst-nb>=1.1",
@@ -72,20 +73,21 @@ optional-dependencies.test = [
   "pytest",
 ]
 
+[project.urls]
+Documentation = "https://czi-ai.github.io/scldm"
+Homepage = "https://github.com/czi-ai/scldm"
+Source = "https://github.com/czi-ai/scldm"
+
 [tool.hatch.metadata]
 allow-direct-references = true
-
-# https://docs.pypi.org/project_metadata/#project-urls
-urls.Documentation = "https://scldm.readthedocs.io/"
-urls.Homepage = "https://github.com/czi-ai/scldm"
-urls.Source = "https://github.com/czi-ai/scldm"
 
 [tool.hatch.envs.default]
 installer = "uv"
 features = [ "dev" ]
 
 [tool.hatch.envs.docs]
-features = [ "doc" ]
+installer = "uv"
+features = [ "docs" ]
 scripts.build = "sphinx-build -M html docs docs/_build -W {args}"
 scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
 scripts.clean = "git clean -fdX -- {args:docs}"
@@ -109,6 +111,12 @@ features = [ "dev", "test" ]
 matrix.deps.env-vars = [
   { key = "UV_PRERELEASE", value = "allow", if = [ "pre" ] },
 ]
+
+[tool.hatch.build.targets.sdist]
+packages = ["src/scldm"]  # this is needed to avoid packaging the entire repo in the sdist
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scldm"]
 
 [tool.ruff]
 line-length = 120
