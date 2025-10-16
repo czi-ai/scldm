@@ -91,6 +91,10 @@ features = [ "docs" ]
 scripts.build = "sphinx-build -M html docs docs/_build -W {args}"
 scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
 scripts.clean = "git clean -fdX -- {args:docs}"
+extra-dependencies = [
+  # Install cellarium-ml from git for docs
+  "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git",
+]
 
 # Test the lowest and highest supported Python versions with normal deps
 [[tool.hatch.envs.hatch-test.matrix]]

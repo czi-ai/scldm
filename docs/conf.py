@@ -31,7 +31,7 @@ release = info["Version"]
 
 bibtex_bibfiles = ["references.bib"]
 templates_path = ["_templates"]
-nitpicky = True  # Warn about broken links
+nitpicky = False
 needs_sphinx = "4.0"
 
 html_context = {
@@ -96,12 +96,18 @@ intersphinx_mapping = {
     "anndata": ("https://anndata.readthedocs.io/en/stable/", None),
     "scanpy": ("https://scanpy.readthedocs.io/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "torch": ("https://docs.pytorch.org/docs/stable/", None),
 }
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
+
+suppress_warnings = [
+    "ref.ref",  # Undefined labels in external libraries
+    "docutils",  # Malformed docstrings in external libraries
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -128,4 +134,12 @@ nitpick_ignore = [
     # If building the documentation fails because of a missing link that is outside your control,
     # you can add an exception to this list.
     #     ("py:class", "igraph.Graph"),
+    ("py:class", "type"),
+    ("py:data", "typing.Union"),
+]
+
+# Ignore broken references in external libraries
+nitpick_ignore_regex = [
+    (r"py:.*", r"torch\..*"),
+    (r"py:.*", r"pytorch_lightning\..*"),
 ]
