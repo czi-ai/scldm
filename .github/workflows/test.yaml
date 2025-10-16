@@ -17,6 +17,9 @@ defaults:
     # to fail on error in multiline statements (-e), in pipes (-o pipefail), and on unset variables (-u).
     shell: bash -euo pipefail {0}
 
+permissions:
+  contents: read
+
 jobs:
   # Get the test environment from hatch as defined in pyproject.toml.
   # This ensures that the pyproject.toml is the single point of truth for test definitions and the same tests are
