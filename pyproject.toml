@@ -4,7 +4,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "scldm"
-version = "0.0.0"
+version = "0.0.1"
 description = "single-cell latent diffusion model"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -23,7 +23,7 @@ classifiers = [
 ]
 dependencies = [
   "anndata",
-  "cellarium-ml",
+  "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml@main",
   "cellxgene-census==1.16.2",
   "einops",
   "ema-pytorch==0.7.7",
@@ -113,12 +113,10 @@ matrix.deps.env-vars = [
 ]
 
 [tool.hatch.build.targets.sdist]
-# Only include pyproject.toml for testing
-only-include = ["pyproject.toml"]
+packages = ["src/scldm"]  # this is needed to avoid packaging the entire repo in the sdist
 
 [tool.hatch.build.targets.wheel]
-# Only include pyproject.toml to create minimal wheel for testing
-only-include = ["pyproject.toml"]
+packages = ["src/scldm"]
 
 [tool.ruff]
 line-length = 120
