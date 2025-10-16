@@ -12,8 +12,9 @@ buck-out/
 __pycache__/
 .*cache/
 
-# Distribution / packaging
+# Distribution / packaging (these are generated at build time)
 /dist/
+src/scldm/_version.py
 
 # Tests and coverage
 /data/

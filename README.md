@@ -18,20 +18,27 @@ in particular, the [API documentation][].
 You need to have Python 3.11 or newer installed on your system.
 If you don't have Python installed, we recommend installing [uv][].
 
-There are several alternative options to install scldm:
-
-<!--
-1) Install the latest release of `scldm` from [PyPI][]:
+To install the latest release of `scldm` from [PyPI][]:
 
 ```bash
-pip install scldm
+pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
+# or
+uv pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 ```
--->
 
-1. Install the latest development version:
+### Note On  Dependencies
 
+#### Cellarium-ML
+
+This model uses [cellarium-ml](https://github.com/cellarium-ai/cellarium-ml). Currently,
+the most recent version on PyPI (0.0.7) is not compatible with `anndata>=0.10.9`,
+which this model uses. You must install a newer version of `cellarium-ml` from source:
+
+You can install cellarium-ml separately with:
 ```bash
-pip install git+https://github.com/czi-ai/scldm.git@main
+pip install "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
+# or
+uv pip install "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 ```
 
 ## Release notes

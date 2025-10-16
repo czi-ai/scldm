@@ -11,12 +11,20 @@ import anndata as ad
 import numpy as np
 import torch
 from anndata import AnnData
-from cellarium.ml.data import (
-    DistributedAnnDataCollection,
-    IterableDistributedAnnDataCollectionDataset,
-)
-from cellarium.ml.utilities.data import AnnDataField, convert_to_tensor
 from pytorch_lightning import LightningDataModule
+
+try:
+    from cellarium.ml.data import (
+        DistributedAnnDataCollection,
+        IterableDistributedAnnDataCollectionDataset,
+    )
+    from cellarium.ml.utilities.data import AnnDataField, convert_to_tensor
+except ImportError as e:
+    raise ImportError(
+        "cellarium-ml is required for DataModule functionality. "
+        "If `cellarium-ml>0.0.7` is available on PyPI, install with: pip install cellarium-ml . "
+        "Otherwise: pip install 'cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git'"
+    ) from e
 from torch.utils._pytree import tree_map
 from torch.utils.data import DataLoader
 
