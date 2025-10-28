@@ -41,4 +41,6 @@ contributing.md
 references.md
 
 notebooks/example
+notebooks/generation
+notebooks/inference_census
 ```
