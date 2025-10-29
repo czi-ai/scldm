@@ -31,9 +31,60 @@ def log1p_transform(genes: torch.Tensor, counts: torch.Tensor, zero_encoding: bo
     return genes * torch.log1p(counts)
 
 
+def asinh_sqrt_transform(genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
+    """Check if using"""
+    counts = torch.asinh(torch.sqrt(counts + 1.0))
+    return genes * counts
+
+
+def sqrt_transform(genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
+    counts = torch.sqrt(counts + 1.0)
+    return genes * counts
+
+
+class Projection(nn.Module):
+    def __init__(self, n_embed: int):
+        super().__init__()
+        self.count_embedding = nn.Linear(1, n_embed)
+
+    def forward(self, genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
+        counts = self.count_embedding(counts)
+        return genes + counts
+
+
+class ProjectionConcat(nn.Module):
+    def __init__(self, n_embed: int):
+        super().__init__()
+        self.mix = nn.Linear(n_embed * 2, n_embed)
+
+    def forward(self, genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
+        # More efficient: expand counts to match genes shape
+        log_counts = torch.log1p(counts).expand(-1, -1, genes.shape[-1])
+        return self.mix(torch.cat([genes, log_counts], dim=-1))
+
+
+class SoftBinProjection(nn.Module):
+    def __init__(self, n_embed: int, n_bins: int = 10, hidden_dim: int = 64):
+        super().__init__()
+        self.n_bins = n_bins
+        self.mlp_count = nn.Sequential(nn.Linear(1, hidden_dim), nn.SiLU(), nn.Linear(hidden_dim, self.n_bins))
+        self.bin_embeddings = nn.Parameter(torch.randn(self.n_bins, n_embed))
+
+    def forward(self, genes: torch.Tensor, counts: torch.Tensor) -> torch.Tensor:
+        bin_logits = self.mlp_count(counts)  # (..., n_bins)
+        bin_weights = torch.softmax(bin_logits, dim=-1)  # (..., n_bins)
+        count_embedding = torch.einsum("...k,kd->...d", bin_weights, self.bin_embeddings)
+        return genes + count_embedding
+
+
 PROJ_FUNC = {
     "log1p": log1p_transform,
     "log1pzero": partial(log1p_transform, zero_encoding=True),
+    "anscombe": asinh_sqrt_transform,
+    "sqrt": sqrt_transform,
+    "proj": Projection,
+    "projconcat": ProjectionConcat,
+    "softbin": SoftBinProjection,
 }
 
 
