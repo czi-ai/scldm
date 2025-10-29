@@ -7,7 +7,7 @@ name = "scldm"
 dynamic = ["version"]
 description = "single-cell latent diffusion model"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = { file = "LICENSE.md" }
 maintainers = [
   { name = "Giovanni Palla", email = "gpalla@chanzuckerberg.com" },
 ]
