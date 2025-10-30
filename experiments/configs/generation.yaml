@@ -35,4 +35,4 @@ ckpt_file: ${paths.dataset_paths.${datamodule.dataset}.ckpt}
 config_file: ${paths.dataset_paths.${datamodule.dataset}.config}
 
 dataset_generation_idx: 0
-inference_path: /mnt/czi-sci-ai/project-scg-llm-pvc/giovanni/outputs
+inference_path: outputs

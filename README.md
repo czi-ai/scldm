@@ -25,6 +25,7 @@ pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-
 # or
 uv pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 ```
+ 
 
 ### Note On  Dependencies
 
@@ -35,11 +36,28 @@ the most recent version on PyPI (0.0.7) is not compatible with `anndata>=0.10.9`
 which this model uses. You must install a newer version of `cellarium-ml` from source:
 
 You can install cellarium-ml separately with:
+
 ```bash
 pip install "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 # or
 uv pip install "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 ```
+
+## Checkpoints and other artifacts
+
+To download model checkpoints and other required artifacts:
+
+```bash
+scldm-download-artifacts
+# or
+uv run scldm-download-artifacts
+```
+
+This will automatically download all artifacts to the `_artifacts` subdirectory. You
+can change this with the `--destination` flag. If you don't want to download all
+files, you can specify `--group datasets`, `--group vae_census`, `--group fm_observational`, and/or
+`--group fm_perturbation` to download just those artifacts.
+
 
 ## Release notes
 

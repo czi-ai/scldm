@@ -23,6 +23,7 @@ classifiers = [
 ]
 dependencies = [
   "anndata",
+  "boto3",
   "cellxgene-census==1.16.2",
   "einops",
   "ema-pytorch==0.7.7",
@@ -80,6 +81,9 @@ optional-dependencies.test = [
 Documentation = "https://czi-ai.github.io/scldm"
 Homepage = "https://github.com/czi-ai/scldm"
 Source = "https://github.com/czi-ai/scldm"
+
+[project.scripts]
+scldm-download-artifacts = "scldm.download_artifacts:main"
 
 [tool.hatch.version]
 source = "vcs"
