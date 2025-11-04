@@ -1,10 +1,9 @@
 [build-system]
 build-backend = "hatchling.build"
-requires = [ "hatchling", "hatch-vcs" ]
+requires = [ "hatch-vcs", "hatchling" ]
 
 [project]
 name = "scldm"
-dynamic = ["version"]
 description = "single-cell latent diffusion model"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -21,6 +20,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
 ]
+dynamic = [ "version" ]
 dependencies = [
   "anndata",
   "boto3",
@@ -28,7 +28,6 @@ dependencies = [
   "einops",
   "ema-pytorch==0.7.7",
   "hydra-core",
-  "leidenalg",
   "lightning==2.4",
   "numpy",
   "omegaconf",
@@ -40,7 +39,6 @@ dependencies = [
   "rich",
   "scvi-tools>=1.2",
   # for debug logging (referenced from the issue template)
-  "session-info2",
   "torch==2.7",
   "torch-optimizer",
   "torchdyn",
@@ -57,7 +55,7 @@ optional-dependencies.dev = [
 ]
 optional-dependencies.docs = [
   "docutils>=0.8,!=0.18.*,!=0.19.*",
-  "hatch",  # so we can use the tool.hatch.envs.docs.scripts commands
+  "hatch",                           # so we can use the tool.hatch.envs.docs.scripts commands
   "ipykernel",
   "ipython",
   "myst-nb>=1.1",
@@ -77,13 +75,10 @@ optional-dependencies.test = [
   "pytest",
 ]
 
-[project.urls]
-Documentation = "https://czi-ai.github.io/scldm"
-Homepage = "https://github.com/czi-ai/scldm"
-Source = "https://github.com/czi-ai/scldm"
-
-[project.scripts]
-scldm-download-artifacts = "scldm.download_artifacts:main"
+urls.Documentation = "https://czi-ai.github.io/scldm"
+urls.Homepage = "https://github.com/czi-ai/scldm"
+urls.Source = "https://github.com/czi-ai/scldm"
+scripts.scldm-download-artifacts = "scldm.download_artifacts:main"
 
 [tool.hatch.version]
 source = "vcs"
@@ -134,10 +129,10 @@ matrix.deps.env-vars = [
 ]
 
 [tool.hatch.build.targets.sdist]
-packages = ["src/scldm"]  # this is needed to avoid packaging the entire repo in the sdist
+packages = [ "src/scldm" ] # this is needed to avoid packaging the entire repo in the sdist
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/scldm"]
+packages = [ "src/scldm" ]
 
 [tool.ruff]
 line-length = 120
