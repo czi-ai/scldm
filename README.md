@@ -71,7 +71,7 @@ See the [changelog][].
 
 ## Contact
 
-If you found a bug, please use the [issue tracker]().
+If you found a bug, please use the [issue tracker][issue-tracker].
 
 ## Citation
 
