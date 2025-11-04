@@ -30,3 +30,9 @@ SETUP_NOTES.md
 /outputs/
 /data/
 *.h5ad
+
+# notebook checkpoints
+**/.ipynb_checkpoints/
+
+# model assets and artifacts (mostly large files)
+_artifacts/
