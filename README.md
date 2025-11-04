@@ -25,7 +25,7 @@ pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-
 # or
 uv pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 ```
- 
+
 
 ### Note On  Dependencies
 

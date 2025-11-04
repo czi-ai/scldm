@@ -174,7 +174,7 @@ lint.ignore = [
   "E741", # allow I, O, l as variable names -> I is the identity matrix
 ]
 lint.per-file-ignores."*/__init__.py" = [ "F401" ]
-lint.per-file-ignores."notebooks/*" = [ "B", "C4", "D", "E" ]
+lint.per-file-ignores."docs/notebooks/*" = [ "B", "C4", "D", "E" ]
 lint.per-file-ignores."tests/*" = [ "D", "F" ]
 lint.pydocstyle.convention = "numpy"
 
