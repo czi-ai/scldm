@@ -1,4 +1,6 @@
-# scLDM: Single-Cell Latent Diffusion Model
+```{include} ../README.md
+
+```
 
 ## Overview
 
@@ -26,10 +28,6 @@ scLDM is a deep learning framework for modeling single-cell gene expression usin
 - {doc}`Contributing <contributing>` - Guidelines for contributing to the project
 
 ---
-
-```{include} ../README.md
-
-```
 
 ```{toctree}
 :hidden: true
