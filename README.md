@@ -2,11 +2,17 @@
 
 [![Tests][badge-tests]][tests]
 [![Documentation][badge-docs]][documentation]
+[![pre-commit.ci status][badge-precommit]][pre-commit]
+[![Release][badge-release]][release]
 
 [badge-tests]: https://img.shields.io/github/actions/workflow/status/czi-ai/scldm/test.yaml?branch=main
 [badge-docs]: https://img.shields.io/github/actions/workflow/status/czi-ai/scldm/docs.yaml?branch=main
+[badge-precommit]: https://results.pre-commit.ci/badge/github/czi-ai/scldm/main.svg
+[badge-release]: https://github.com/czi-ai/scldm/actions/workflows/release.yaml/badge.svg?event=release
 
 `scLDM` is a latent-diffusion model consisting of a novel fully transformer-based VAE architecture for exchangeable data that uses a single set of fixed-size, permutation-invariant latent variables. The model introduces a Multi-head Cross-Attention Block (MCAB) that serves dual purposes: It acts as a permutation-invariant pooling operator in the encoder, and functions as a permutation-equivariant unpooling operator in the decoder. This unified approach eliminates the need for separate architectural components for handling varying set sizes. Our latent diffusion model is trained with the flow matching loss and linear interpolants using the Scalable Interpolant Transformers formulation (SiT) (Ma et al., 2024), and a denoiser parameterized by Diffusion Transformers (DiT) (Peebles & Xie, 2023). This allows for better modeling of the complex distribution of cellular states and enables controlled generation through classifier-free guidance.
+
+![scldm-banner](https://github.com/czi-ai/scldm/blob/main/docs/_static/main.png?raw=true)
 
 ## Getting started
 
@@ -25,9 +31,9 @@ pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-
 # or
 uv pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 ```
- 
 
-### Note On  Dependencies
+
+### Note On Dependencies
 
 #### Cellarium-ML
 
@@ -65,8 +71,7 @@ See the [changelog][].
 
 ## Contact
 
-For questions and help requests, you can reach out in the [scverse discourse](https://discourse.scverse.org/).
-If you found a bug, please use the [issue tracker]().
+If you found a bug, please use the [issue tracker][issue-tracker].
 
 ## Citation
 
@@ -75,7 +80,9 @@ If you found a bug, please use the [issue tracker]().
 [uv]: https://github.com/astral-sh/uv
 [issue tracker]: https://github.com/czi-ai/scldm/issues
 [tests]: https://github.com/czi-ai/scldm/actions/workflows/test.yaml
+[pre-commit]: https://results.pre-commit.ci/latest/github/czi-ai/scldm/main
 [documentation]: https://czi-ai.github.io/scldm
+[release]: https://github.com/scverse/spatialdata/actions/workflows/release.yaml
 [changelog]: https://czi-ai.github.io/scldm/changelog.html
 [api documentation]: https://czi-ai.github.io/scldm/api.html
 [pypi]: https://pypi.org/project/scldm

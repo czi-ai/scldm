@@ -381,7 +381,7 @@ def main():
     )
 
     try:
-        errors = download_artifacts(destination=args.destination, credentials=credentials, groups=groups)
+        _ = download_artifacts(destination=args.destination, credentials=credentials, groups=groups)
     except ValidationError as e:
         print("ABORTING DOWNLOAD", file=sys.stderr)
         print(e.message, file=sys.stderr)
