@@ -94,23 +94,27 @@ class VocabularyEncoderSimplified:
                         self.classes2idx[label][k]: v for k, v in sd_size_factor_dict[label].items()
                     }
         elif hasattr(self, "condition_strategy") and self.condition_strategy == "joint":
+            joint_class = "_".join(self.class_vocab_sizes.keys())
+            self.joint_key = joint_class
+            self.joint_components = list(self.class_vocab_sizes.keys())
             if self.mu_size_factor is not None:
                 mu_size_factor_dict = pickle.load(open(self.mu_size_factor, "rb"))
                 self.mu_size_factor = {}
-                self.mu_size_factor["cell_type_cytokine"] = mu_size_factor_dict["cell_type_cytokine"]
+                self.mu_size_factor[joint_class] = mu_size_factor_dict[joint_class]
                 self.joint_idx_2_classes = {}
-                for _idx, token in enumerate(mu_size_factor_dict["cell_type_cytokine"].keys()):
-                    # get cell_type and cytokine from token
-                    cell_type, cytokine = token.split("_")
+                class1, class2 = self.class_vocab_sizes.keys()
+                for _idx, token in enumerate(mu_size_factor_dict[joint_class].keys()):
+                    # get class instances from token (use rsplit to handle underscores in instance names)
+                    instance1, instance2 = token.rsplit("_", 1)
 
-                    cell_type_idx = self.classes2idx["cell_line"][cell_type]
-                    cytokine_idx = self.classes2idx["gene"][cytokine]
-                    self.joint_idx_2_classes[str(cell_type_idx) + "_" + str(cytokine_idx)] = token
+                    class1_idx = self.classes2idx[class1][instance1]
+                    class2_idx = self.classes2idx[class2][instance2]
+                    self.joint_idx_2_classes[str(class1_idx) + "_" + str(class2_idx)] = token
 
             if self.sd_size_factor is not None:
                 sd_size_factor_dict = pickle.load(open(self.sd_size_factor, "rb"))
                 self.sd_size_factor = {}
-                self.sd_size_factor["cell_type_cytokine"] = sd_size_factor_dict["cell_type_cytokine"]
+                self.sd_size_factor[joint_class] = sd_size_factor_dict[joint_class]
 
             # handle idx mapping later during generation time
         # Remove adata reference as it's no longer needed after initialization

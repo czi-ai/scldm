@@ -31,6 +31,8 @@ model:
 
 experiment_name: inference_test
 
+# TODO: Update path - these resolve to paths in paths/datasets.yaml (e.g., _artifacts/fm_observational/dentate_gyrus.ckpt)
+# For local checkpoints, override via CLI: ckpt_file=/path/to/checkpoint.ckpt config_file=/path/to/config.yaml
 ckpt_file: ${paths.dataset_paths.${datamodule.dataset}.ckpt}
 config_file: ${paths.dataset_paths.${datamodule.dataset}.config}
 

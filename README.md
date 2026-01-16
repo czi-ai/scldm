@@ -64,6 +64,63 @@ can change this with the `--destination` flag. If you don't want to download all
 files, you can specify `--group datasets`, `--group vae_census`, `--group fm_observational`, and/or
 `--group fm_perturbation` to download just those artifacts.
 
+## Training
+
+### 1. VAE Training
+
+```bash
+cd experiments
+python scripts/train.py \
+  paths.base_data_path=/path/to/your/data \
+  experiment_name=my_vae_experiment \
+  training.num_epochs=100
+```
+
+Key config overrides:
+- `paths.base_data_path`: Path to dataset directory
+- `experiment_name`: Name for checkpoints/logs
+- `datamodule.dataset`: Dataset name (e.g., `dentate_gyrus`)
+- `training.num_epochs`: Number of training epochs
+- `model.batch_size`: Training batch size
+
+Checkpoints saved to: `experiments/checkpoints/{experiment_name}/`
+
+### 2. Flow Matching (LDM) Training
+
+Requires a trained VAE checkpoint first.
+
+```bash
+cd experiments
+python scripts/train_ldm.py \
+  paths.base_data_path=/path/to/your/data \
+  experiment_name=my_ldm_experiment \
+  model.module.vae_as_tokenizer.load_from_checkpoint.ckpt_path=/path/to/vae/checkpoints \
+  model.module.vae_as_tokenizer.load_from_checkpoint.job_name=my_vae_experiment
+```
+
+Key config overrides:
+- `model.module.vae_as_tokenizer.load_from_checkpoint.ckpt_path`: Directory containing VAE checkpoint
+- `model.module.vae_as_tokenizer.load_from_checkpoint.job_name`: VAE experiment name
+- `model.module.vae_as_tokenizer.train`: Set to `true` to fine-tune VAE (default: `false`)
+
+## Inference / Sampling
+
+```bash
+cd experiments
+python scripts/inference.py \
+  ckpt_file=/path/to/ldm/checkpoint.ckpt \
+  config_file=/path/to/ldm/config.yaml \
+  datamodule.dataset=dentate_gyrus \
+  datamodule.datamodule.test_batch_size=128
+```
+
+Key config overrides:
+- `ckpt_file`: Path to LDM checkpoint
+- `config_file`: Path to saved config.yaml from training
+- `model.module.generation_args.guidance_weight`: Classifier-free guidance weight
+- `inference_path`: Output directory (default: `outputs/`)
+
+Output: AnnData file saved to `{inference_path}/{dataset}_generated_{idx}.h5ad`
 
 ## Release notes
 
