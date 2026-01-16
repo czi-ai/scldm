@@ -1,0 +1,45 @@
+# @package _global_
+
+defaults:
+  - paths: datasets
+  - model: vae_base
+  - training: default
+  - datamodule: default
+  - _self_
+
+paths:
+  # TODO: Change this path to your local data directory
+  base_data_path: /mnt/czi-sci-ai/project-scg-llm-pvc/data/generation/datasets/dentategyrus
+
+seed: 42
+experiment_name: vae_dentate_gyrus
+
+datamodule:
+  dataset: dentate_gyrus
+  datamodule:
+    batch_size: ${model.batch_size}
+    test_batch_size: ${model.test_batch_size}
+    sample_genes: expressed
+    num_workers: 4
+    val_as_test: false
+
+training:
+  num_epochs: 100
+  trainer:
+    enable_progress_bar: true
+    check_val_every_n_epoch: 10
+  callbacks:
+    model_checkpoints:
+      monitor: val_loss
+      mode: min
+      save_top_k: 1
+      save_last: true
+      dirpath: ${paths.base_experiment_path}/checkpoints/${experiment_name}
+  logger:
+    csv:
+      save_dir: ${paths.base_experiment_path}/csv_logger
+      name: ${experiment_name}
+    wandb:
+      project: scldm_vae
+      entity: scg-vae  # TODO: Change to your wandb entity/organization
+      save_dir: ${paths.base_experiment_path}/wandb_logger
