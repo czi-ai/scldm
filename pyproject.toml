@@ -23,7 +23,7 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
-  "anndata",
+  "anndata<=0.10.9",
   "boto3",
   "cellxgene-census==1.16.2",
   "einops",

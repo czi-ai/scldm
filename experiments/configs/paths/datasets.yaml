@@ -5,26 +5,26 @@ dataset_paths:
   dentate_gyrus:
     train: ${paths.base_data_path}/dentategyrus_train.h5ad
     test: ${paths.base_data_path}/dentategyrus_test.h5ad
-    config: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/dentate_gyrus.yaml
-    ckpt: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/dentate_gyrus.ckpt
-    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/dentate_gyrus_log_size_factor_mu.pkl
-    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/dentate_gyrus_log_size_factor_sd.pkl
+    config: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/dentate_gyrus.yaml
+    ckpt: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/dentate_gyrus.ckpt
+    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/dentate_gyrus_log_size_factor_mu.pkl
+    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/dentate_gyrus_log_size_factor_sd.pkl
 
   hlca:
     train: ${paths.base_data_path}/hlca_train_sharded/adata_0.h5ad
     test: ${paths.base_data_path}/hlca_test_sharded/adata_0.h5ad
-    config: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/hlca.yaml
-    ckpt: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/hlca.ckpt
-    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/hlca_log_size_factor_mu.pkl
-    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/hlca_log_size_factor_sd.pkl
+    config: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/hlca.yaml
+    ckpt: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/hlca.ckpt
+    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/hlca_log_size_factor_mu.pkl
+    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/hlca_log_size_factor_sd.pkl
 
   tabula_muris:
     train: ${paths.base_data_path}/tabula_muris_train_sharded/adata_0.h5ad
     test: ${paths.base_data_path}/tabula_muris_test_sharded/adata_0.h5ad
-    config: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/tabula_muris.yaml
-    ckpt: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/tabula_muris.ckpt
-    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/tabula_muris_log_size_factor_mu.pkl
-    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/fm_observational/tabula_muris_log_size_factor_sd.pkl
+    config: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/tabula_muris.yaml
+    ckpt: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/tabula_muris.ckpt
+    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/tabula_muris_log_size_factor_mu.pkl
+    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/release/resubmission/tabula_muris_log_size_factor_sd.pkl
 
   czb_cd4_naive_holdout:
     train: ${paths.base_data_path}/CD4_Naive_holdout/train.h5ad
