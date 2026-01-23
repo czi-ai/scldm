@@ -310,16 +310,10 @@ def load_validate_statedict_config(
         Updated configuration with VAE architecture from pretrained config
     """
     vae_state_dict = {
-        k.replace("vae_model.", "", 1): v
-        for k, v in checkpoints["state_dict"].items()
-        if k.startswith("vae_model.")
+        k.replace("vae_model.", "", 1): v for k, v in checkpoints["state_dict"].items() if k.startswith("vae_model.")
     }
     config.model.module.vae_model = pretrain_config.model.module.vae_model
-    config.model.module.diffusion_model.n_embed_input = (
-        pretrain_config.model.module.vae_model.encoder.n_embed_latent
-    )
-    config.model.module.diffusion_model.seq_len = (
-        pretrain_config.model.module.vae_model.encoder.n_inducing_points
-    )
+    config.model.module.diffusion_model.n_embed_input = pretrain_config.model.module.vae_model.encoder.n_embed_latent
+    config.model.module.diffusion_model.seq_len = pretrain_config.model.module.vae_model.encoder.n_inducing_points
     config.model.decoder_name = pretrain_config.model.decoder_name
     return vae_state_dict, config

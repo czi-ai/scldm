@@ -37,8 +37,7 @@ def train(cfg: DictConfig) -> None:
 
     # Check if using VAE as tokenizer (loading from checkpoint)
     is_vae_as_tokenizer = (
-        hasattr(cfg.model.module, "vae_as_tokenizer")
-        and "load_from_checkpoint" in cfg.model.module.vae_as_tokenizer
+        hasattr(cfg.model.module, "vae_as_tokenizer") and "load_from_checkpoint" in cfg.model.module.vae_as_tokenizer
     )
 
     vae_state_dict = None
@@ -60,9 +59,7 @@ def train(cfg: DictConfig) -> None:
         vae_config = OmegaConf.load(job_path / "config.yaml")
 
         # Extract VAE state dict and update config
-        vae_state_dict, cfg = load_validate_statedict_config(
-            vae_checkpoints, cfg, vae_config
-        )
+        vae_state_dict, cfg = load_validate_statedict_config(vae_checkpoints, cfg, vae_config)
         logger.info(f"Loaded VAE config from checkpoint, train mode: {cfg.model.module.vae_as_tokenizer.train}")
 
     # Instantiate model
