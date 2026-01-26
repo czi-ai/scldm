@@ -35,8 +35,7 @@ vocabulary_encoder:
 dataset: dentate_gyrus
 
 # Dataset-specific parameters
-# NOTE: mu_size_factor and sd_size_factor paths below are hardcoded.
-# TODO: Change these paths to match your local data directory.
+# NOTE: mu_size_factor and sd_size_factor paths are expected under _artifacts.
 dataset_params:
   dentate_gyrus:
     n_genes: 17002
@@ -46,8 +45,8 @@ dataset_params:
       clusters: 1.0
     genes_seq_len: 6147
     sample_genes: expressed
-    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/dentate_gyrus_log_size_factor_mu.pkl  # TODO: Update path
-    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/dentate_gyrus_log_size_factor_sd.pkl  # TODO: Update path
+    mu_size_factor: ${paths.base_release_path}/resubmission/dentate_gyrus_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/dentate_gyrus_log_size_factor_sd.pkl
     adata_attr: X
     adata_key: null
     condition_strategy: mutually_exclusive
@@ -61,8 +60,8 @@ dataset_params:
       cell_type: 1.0
     genes_seq_len: 10186
     sample_genes: expressed
-    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/hlca_log_size_factor_mu.pkl  # TODO: Update path
-    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/hlca_log_size_factor_sd.pkl  # TODO: Update path
+    mu_size_factor: ${paths.base_release_path}/resubmission/hlca_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/hlca_log_size_factor_sd.pkl
     adata_attr: layers
     adata_key: X_counts
     condition_strategy: mutually_exclusive
@@ -76,14 +75,14 @@ dataset_params:
       tissue: 1.0
     genes_seq_len: 9059
     sample_genes: expressed
-    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/tabula_muris_log_size_factor_mu.pkl  # TODO: Update path
-    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-pvc/benchmark/generation/tabula_muris_log_size_factor_sd.pkl  # TODO: Update path
+    mu_size_factor: ${paths.base_release_path}/resubmission/tabula_muris_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/tabula_muris_log_size_factor_sd.pkl
     adata_attr: layers
     adata_key: X_counts
     condition_strategy: mutually_exclusive
     metadata_genes: null
 
-  czb_cd4_naive_holdout:
+  parse1m:
     n_genes: 2000
     class_vocab_sizes:
       cell_type: 18
@@ -93,8 +92,8 @@ dataset_params:
       cytokine: 1.0
     genes_seq_len: 2000
     sample_genes: all
-    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/CD4_Naive_holdout/czb_cd4_naive_holdout_log_size_factor_mu.pkl  # TODO: Update path
-    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/CD4_Naive_holdout/czb_cd4_naive_holdout_log_size_factor_sd.pkl  # TODO: Update path
+    mu_size_factor: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_log_size_factor_sd.pkl
     adata_attr: X
     adata_key: null
     condition_strategy: joint
@@ -110,8 +109,8 @@ dataset_params:
       gene: 1.0
     genes_seq_len: 2000
     sample_genes: all
-    mu_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/Replogle_Nadig_from_STATE/processed/replogle_log_size_factor_munew.pkl  # TODO: Update path
-    sd_size_factor: /mnt/czi-sci-ai/project-scg-llm-data-2/czb_data/Replogle_Nadig_from_STATE/processed/replogle_log_size_factor_sdnew.pkl  # TODO: Update path
+    mu_size_factor: ${paths.base_release_path}/resubmission/replogle_log_size_factor_munew.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/replogle_log_size_factor_sdnew.pkl
     adata_attr: X
     adata_key: null
     condition_strategy: joint

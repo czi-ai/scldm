@@ -47,56 +47,134 @@ ARTIFACTS = [
         "s3://czi-scldm/datasets/dentategyrus_train.h5ad", "datasets/dentategyrus_train.h5ad", groups={"datasets"}
     ),
     Artifact(
-        "s3://czi-scldm/fm_observational/dentate_gyrus.ckpt",
-        "fm_observational/dentate_gyrus.ckpt",
-        groups={"fm_observational"},
+        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_gaussian.ckpt",
+        "resubmission/czb_cd4_naive_holdout_gaussian.ckpt",
+        groups={"resubmission"},
     ),
     Artifact(
-        "s3://czi-scldm/fm_observational/dentate_gyrus.yaml",
-        "fm_observational/dentate_gyrus.yaml",
-        groups={"fm_observational"},
+        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_gaussian.yaml",
+        "resubmission/czb_cd4_naive_holdout_gaussian.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_negative_binomial.ckpt",
+        "resubmission/czb_cd4_naive_holdout_negative_binomial.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_negative_binomial.yaml",
+        "resubmission/czb_cd4_naive_holdout_negative_binomial.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/dentate_gyrus_gaussian.ckpt",
+        "resubmission/dentate_gyrus_gaussian.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/dentate_gyrus_gaussian.yaml",
+        "resubmission/dentate_gyrus_gaussian.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/dentate_gyrus_negative_binomial.ckpt",
+        "resubmission/dentate_gyrus_negative_binomial.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/dentate_gyrus_negative_binomial.yaml",
+        "resubmission/dentate_gyrus_negative_binomial.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/hlca_gaussian.ckpt",
+        "resubmission/hlca_gaussian.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/hlca_gaussian.yaml",
+        "resubmission/hlca_gaussian.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/hlca_negative_binomial.ckpt",
+        "resubmission/hlca_negative_binomial.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/hlca_negative_binomial.yaml",
+        "resubmission/hlca_negative_binomial.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_gaussian.ckpt",
+        "resubmission/replogle_gaussian.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_gaussian.yaml",
+        "resubmission/replogle_gaussian.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_negative_binomial.ckpt",
+        "resubmission/replogle_negative_binomial.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_negative_binomial.yaml",
+        "resubmission/replogle_negative_binomial.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/tabula_muris_gaussian.ckpt",
+        "resubmission/tabula_muris_gaussian.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/tabula_muris_gaussian.yaml",
+        "resubmission/tabula_muris_gaussian.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/tabula_muris_negative_binomial.ckpt",
+        "resubmission/tabula_muris_negative_binomial.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/tabula_muris_negative_binomial.yaml",
+        "resubmission/tabula_muris_negative_binomial.yaml",
+        groups={"resubmission"},
     ),
     Artifact(
         "s3://czi-scldm/fm_observational/dentate_gyrus_log_size_factor_mu.pkl",
-        "fm_observational/dentate_gyrus_log_size_factor_mu.pkl",
-        groups={"fm_observational"},
+        "resubmission/dentate_gyrus_log_size_factor_mu.pkl",
+        groups={"resubmission"},
     ),
     Artifact(
         "s3://czi-scldm/fm_observational/dentate_gyrus_log_size_factor_sd.pkl",
-        "fm_observational/dentate_gyrus_log_size_factor_sd.pkl",
-        groups={"fm_observational"},
+        "resubmission/dentate_gyrus_log_size_factor_sd.pkl",
+        groups={"resubmission"},
     ),
-    Artifact("s3://czi-scldm/fm_observational/hlca.ckpt", "fm_observational/hlca.ckpt", groups={"fm_observational"}),
-    Artifact("s3://czi-scldm/fm_observational/hlca.yaml", "fm_observational/hlca.yaml", groups={"fm_observational"}),
     Artifact(
         "s3://czi-scldm/fm_observational/hlca_log_size_factor_mu.pkl",
-        "fm_observational/hlca_log_size_factor_mu.pkl",
-        groups={"fm_observational"},
+        "resubmission/hlca_log_size_factor_mu.pkl",
+        groups={"resubmission"},
     ),
     Artifact(
         "s3://czi-scldm/fm_observational/hlca_log_size_factor_sd.pkl",
-        "fm_observational/hlca_log_size_factor_sd.pkl",
-        groups={"fm_observational"},
-    ),
-    Artifact(
-        "s3://czi-scldm/fm_observational/tabula_muris.ckpt",
-        "fm_observational/tabula_muris.ckpt",
-        groups={"fm_observational"},
-    ),
-    Artifact(
-        "s3://czi-scldm/fm_observational/tabula_muris.yaml",
-        "fm_observational/tabula_muris.yaml",
-        groups={"fm_observational"},
+        "resubmission/hlca_log_size_factor_sd.pkl",
+        groups={"resubmission"},
     ),
     Artifact(
         "s3://czi-scldm/fm_observational/tabula_muris_log_size_factor_mu.pkl",
-        "fm_observational/tabula_muris_log_size_factor_mu.pkl",
-        groups={"fm_observational"},
+        "resubmission/tabula_muris_log_size_factor_mu.pkl",
+        groups={"resubmission"},
     ),
     Artifact(
         "s3://czi-scldm/fm_observational/tabula_muris_log_size_factor_sd.pkl",
-        "fm_observational/tabula_muris_log_size_factor_sd.pkl",
-        groups={"fm_observational"},
+        "resubmission/tabula_muris_log_size_factor_sd.pkl",
+        groups={"resubmission"},
     ),
     Artifact(
         "s3://czi-scldm/fm_perturbation/czb_cd4_naive_holdout_log_size_factor_mu.pkl",
@@ -110,12 +188,6 @@ ARTIFACTS = [
     ),
     Artifact("s3://czi-scldm/fm_perturbation/parse1m.ckpt", "fm_perturbation/parse1m.ckpt", groups={"fm_perturbation"}),
     Artifact("s3://czi-scldm/fm_perturbation/parse1m.yaml", "fm_perturbation/parse1m.yaml", groups={"fm_perturbation"}),
-    Artifact(
-        "s3://czi-scldm/fm_perturbation/replogle.ckpt", "fm_perturbation/replogle.ckpt", groups={"fm_perturbation"}
-    ),
-    Artifact(
-        "s3://czi-scldm/fm_perturbation/replogle.yaml", "fm_perturbation/replogle.yaml", groups={"fm_perturbation"}
-    ),
     Artifact(
         "s3://czi-scldm/fm_perturbation/replogle_log_size_factor_mu.pkl",
         "fm_perturbation/replogle_log_size_factor_mu.pkl",

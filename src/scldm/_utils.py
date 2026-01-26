@@ -277,7 +277,26 @@ def process_inference_output(
     datamodule: Any,
 ) -> ad.AnnData:
     logger.info("Processing inference output")
-    adata = ad.concat(output)
+
+    # Flatten nested lists (PyTorch Lightning may return [[AnnData], [AnnData], ...])
+    def flatten_output(outputs):
+        flattened = []
+        for item in outputs:
+            if isinstance(item, list):
+                flattened.extend(flatten_output(item))
+            elif isinstance(item, ad.AnnData):
+                flattened.append(item)
+            elif item is not None:
+                logger.warning(f"Unexpected output type in predict results: {type(item)}. Skipping.")
+        return flattened
+
+    flattened_output = flatten_output(output)
+
+    if not flattened_output:
+        raise ValueError("No valid AnnData objects found in prediction output")
+
+    logger.info(f"Concatenating {len(flattened_output)} AnnData objects")
+    adata = ad.concat(flattened_output)
 
     return adata
 
