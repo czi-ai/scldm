@@ -22,7 +22,7 @@ from botocore.config import Config
 
 ALL_GROUPS = "all"
 
-DEFAULT_DESTINATION = pathlib.Path(__file__).parent.resolve() / "_artifacts"
+DEFAULT_DESTINATION = pathlib.Path(__file__).resolve().parents[2] / "_artifacts"
 
 
 @dataclasses.dataclass
