@@ -20,7 +20,7 @@ datamodule:
 
 vocabulary_encoder:
   _target_: scldm.encoder.VocabularyEncoderSimplified
-  adata_path: ${paths.dataset_paths.${..dataset}.train}
+  adata_path: null
   mask_token: "<MASK>"
   mask_token_idx: 0
   n_genes: ${..dataset_params.${..dataset}.n_genes}
@@ -30,6 +30,7 @@ vocabulary_encoder:
   sd_size_factor: ${..dataset_params.${..dataset}.sd_size_factor}
   condition_strategy: ${..dataset_params.${..dataset}.condition_strategy}
   metadata_genes: ${..dataset_params.${..dataset}.metadata_genes}
+  metadata_json: ${..dataset_params.${..dataset}.metadata_json}
 
 # Dataset selection (override this in experiments)
 dataset: dentate_gyrus
@@ -51,6 +52,7 @@ dataset_params:
     adata_key: null
     condition_strategy: mutually_exclusive
     metadata_genes: null
+    metadata_json: ${paths.base_repo_path}/scldm/metadata/dentategyrus_train.json
 
   hlca:
     n_genes: 27997
@@ -66,6 +68,7 @@ dataset_params:
     adata_key: X_counts
     condition_strategy: mutually_exclusive
     metadata_genes: null
+    metadata_json: null
 
   tabula_muris:
     n_genes: 19734
@@ -81,6 +84,7 @@ dataset_params:
     adata_key: X_counts
     condition_strategy: mutually_exclusive
     metadata_genes: null
+    metadata_json: null
 
   parse1m:
     n_genes: 2000
@@ -98,6 +102,7 @@ dataset_params:
     adata_key: null
     condition_strategy: joint
     metadata_genes: null
+    metadata_json: ${paths.base_repo_path}/scldm/metadata/parse1m_train.json
 
   replogle:
     n_genes: 2000
@@ -115,6 +120,7 @@ dataset_params:
     adata_key: null
     condition_strategy: joint
     metadata_genes: null
+    metadata_json: ${paths.base_repo_path}/scldm/metadata/replogle_train.json
 
   homo_sapiens:
     n_genes: 36130
@@ -127,3 +133,4 @@ dataset_params:
     adata_key: null
     condition_strategy: "mutually_exclusive"
     metadata_genes: ${paths.dataset_paths.${datamodule.dataset}.metadata_genes}
+    metadata_json: null
