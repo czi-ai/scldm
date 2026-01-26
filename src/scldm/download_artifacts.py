@@ -42,30 +42,12 @@ class AWSCredentials:
 
 
 ARTIFACTS = [
+    # DATASETS
     Artifact("s3://czi-scldm/datasets/dentategyrus_test.h5ad", "datasets/dentategyrus_test.h5ad", groups={"datasets"}),
     Artifact(
         "s3://czi-scldm/datasets/dentategyrus_train.h5ad", "datasets/dentategyrus_train.h5ad", groups={"datasets"}
     ),
-    Artifact(
-        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_gaussian.ckpt",
-        "resubmission/czb_cd4_naive_holdout_gaussian.ckpt",
-        groups={"resubmission"},
-    ),
-    Artifact(
-        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_gaussian.yaml",
-        "resubmission/czb_cd4_naive_holdout_gaussian.yaml",
-        groups={"resubmission"},
-    ),
-    Artifact(
-        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_negative_binomial.ckpt",
-        "resubmission/czb_cd4_naive_holdout_negative_binomial.ckpt",
-        groups={"resubmission"},
-    ),
-    Artifact(
-        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_negative_binomial.yaml",
-        "resubmission/czb_cd4_naive_holdout_negative_binomial.yaml",
-        groups={"resubmission"},
-    ),
+    # DENTATE GYRUS
     Artifact(
         "s3://czi-scldm/resubmission/dentate_gyrus_gaussian.ckpt",
         "resubmission/dentate_gyrus_gaussian.ckpt",
@@ -87,6 +69,17 @@ ARTIFACTS = [
         groups={"resubmission"},
     ),
     Artifact(
+        "s3://czi-scldm/fm_observational/dentate_gyrus_log_size_factor_mu.pkl",
+        "resubmission/dentate_gyrus_log_size_factor_mu.pkl",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/fm_observational/dentate_gyrus_log_size_factor_sd.pkl",
+        "resubmission/dentate_gyrus_log_size_factor_sd.pkl",
+        groups={"resubmission"},
+    ),
+    # HLCA
+    Artifact(
         "s3://czi-scldm/resubmission/hlca_gaussian.ckpt",
         "resubmission/hlca_gaussian.ckpt",
         groups={"resubmission"},
@@ -107,25 +100,16 @@ ARTIFACTS = [
         groups={"resubmission"},
     ),
     Artifact(
-        "s3://czi-scldm/resubmission/replogle_gaussian.ckpt",
-        "resubmission/replogle_gaussian.ckpt",
+        "s3://czi-scldm/fm_observational/hlca_log_size_factor_mu.pkl",
+        "resubmission/hlca_log_size_factor_mu.pkl",
         groups={"resubmission"},
     ),
     Artifact(
-        "s3://czi-scldm/resubmission/replogle_gaussian.yaml",
-        "resubmission/replogle_gaussian.yaml",
+        "s3://czi-scldm/fm_observational/hlca_log_size_factor_sd.pkl",
+        "resubmission/hlca_log_size_factor_sd.pkl",
         groups={"resubmission"},
     ),
-    Artifact(
-        "s3://czi-scldm/resubmission/replogle_negative_binomial.ckpt",
-        "resubmission/replogle_negative_binomial.ckpt",
-        groups={"resubmission"},
-    ),
-    Artifact(
-        "s3://czi-scldm/resubmission/replogle_negative_binomial.yaml",
-        "resubmission/replogle_negative_binomial.yaml",
-        groups={"resubmission"},
-    ),
+    # TABULA MURIS
     Artifact(
         "s3://czi-scldm/resubmission/tabula_muris_gaussian.ckpt",
         "resubmission/tabula_muris_gaussian.ckpt",
@@ -147,26 +131,6 @@ ARTIFACTS = [
         groups={"resubmission"},
     ),
     Artifact(
-        "s3://czi-scldm/fm_observational/dentate_gyrus_log_size_factor_mu.pkl",
-        "resubmission/dentate_gyrus_log_size_factor_mu.pkl",
-        groups={"resubmission"},
-    ),
-    Artifact(
-        "s3://czi-scldm/fm_observational/dentate_gyrus_log_size_factor_sd.pkl",
-        "resubmission/dentate_gyrus_log_size_factor_sd.pkl",
-        groups={"resubmission"},
-    ),
-    Artifact(
-        "s3://czi-scldm/fm_observational/hlca_log_size_factor_mu.pkl",
-        "resubmission/hlca_log_size_factor_mu.pkl",
-        groups={"resubmission"},
-    ),
-    Artifact(
-        "s3://czi-scldm/fm_observational/hlca_log_size_factor_sd.pkl",
-        "resubmission/hlca_log_size_factor_sd.pkl",
-        groups={"resubmission"},
-    ),
-    Artifact(
         "s3://czi-scldm/fm_observational/tabula_muris_log_size_factor_mu.pkl",
         "resubmission/tabula_muris_log_size_factor_mu.pkl",
         groups={"resubmission"},
@@ -174,6 +138,58 @@ ARTIFACTS = [
     Artifact(
         "s3://czi-scldm/fm_observational/tabula_muris_log_size_factor_sd.pkl",
         "resubmission/tabula_muris_log_size_factor_sd.pkl",
+        groups={"resubmission"},
+    ),
+    # REPLOGLE
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_gaussian.ckpt",
+        "resubmission/replogle_gaussian.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_gaussian.yaml",
+        "resubmission/replogle_gaussian.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_negative_binomial.ckpt",
+        "resubmission/replogle_negative_binomial.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_negative_binomial.yaml",
+        "resubmission/replogle_negative_binomial.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_log_size_factor_munew.pkl",
+        "resubmission/replogle_log_size_factor_munew.pkl",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/replogle_log_size_factor_sdnew.pkl",
+        "resubmission/replogle_log_size_factor_sdnew.pkl",
+        groups={"resubmission"},
+    ),
+    # PARSE1M
+    Artifact(
+        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_gaussian.ckpt",
+        "resubmission/czb_cd4_naive_holdout_gaussian.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_gaussian.yaml",
+        "resubmission/czb_cd4_naive_holdout_gaussian.yaml",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_negative_binomial.ckpt",
+        "resubmission/czb_cd4_naive_holdout_negative_binomial.ckpt",
+        groups={"resubmission"},
+    ),
+    Artifact(
+        "s3://czi-scldm/resubmission/czb_cd4_naive_holdout_negative_binomial.yaml",
+        "resubmission/czb_cd4_naive_holdout_negative_binomial.yaml",
         groups={"resubmission"},
     ),
     Artifact(
@@ -186,18 +202,7 @@ ARTIFACTS = [
         "resubmission/czb_cd4_naive_holdout_log_size_factor_sd.pkl",
         groups={"resubmission"},
     ),
-    Artifact("s3://czi-scldm/resubmission/parse1m.ckpt", "resubmission/parse1m.ckpt", groups={"resubmission"}),
-    Artifact("s3://czi-scldm/resubmission/parse1m.yaml", "resubmission/parse1m.yaml", groups={"resubmission"}),
-    Artifact(
-        "s3://czi-scldm/resubmission/replogle_log_size_factor_munew.pkl",
-        "resubmission/replogle_log_size_factor_munew.pkl",
-        groups={"resubmission"},
-    ),
-    Artifact(
-        "s3://czi-scldm/resubmission/replogle_log_size_factor_sdnew.pkl",
-        "resubmission/replogle_log_size_factor_sdnew.pkl",
-        groups={"resubmission"},
-    ),
+    # CENSUS
     Artifact("s3://czi-scldm/vae_census/20M.ckpt", "vae_census/20M.ckpt", groups={"vae_census"}),
     Artifact("s3://czi-scldm/vae_census/20M.yaml", "vae_census/20M.yaml", groups={"vae_census"}),
     Artifact("s3://czi-scldm/vae_census/270M.ckpt", "vae_census/270M.ckpt", groups={"vae_census"}),
