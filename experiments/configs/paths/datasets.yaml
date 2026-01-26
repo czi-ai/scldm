@@ -5,42 +5,42 @@ dataset_paths:
   dentate_gyrus:
     train: ${paths.base_data_path}/dentategyrus_train.h5ad
     test: ${paths.base_data_path}/dentategyrus_test.h5ad
-    config: ${paths.base_release_path}/dentate_gyrus_negative_binomial.yaml
-    ckpt: ${paths.base_release_path}/dentate_gyrus_negative_binomial.ckpt
-    mu_size_factor: ${paths.base_release_path}/dentate_gyrus_log_size_factor_mu.pkl
-    sd_size_factor: ${paths.base_release_path}/dentate_gyrus_log_size_factor_sd.pkl
+    config: ${paths.base_release_path}/resubmission/dentate_gyrus_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/dentate_gyrus_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/dentate_gyrus_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/dentate_gyrus_log_size_factor_sd.pkl
 
   hlca:
     train: ${paths.base_data_path}/hlca_train_sharded/adata_0.h5ad
     test: ${paths.base_data_path}/hlca_test_sharded/adata_0.h5ad
-    config: ${paths.base_release_path}/hlca_negative_binomial.yaml
-    ckpt: ${paths.base_release_path}/hlca_negative_binomial.ckpt
-    mu_size_factor: ${paths.base_release_path}/hlca_log_size_factor_mu.pkl
-    sd_size_factor: ${paths.base_release_path}/hlca_log_size_factor_sd.pkl
+    config: ${paths.base_release_path}/resubmission/hlca_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/hlca_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/hlca_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/hlca_log_size_factor_sd.pkl
 
   tabula_muris:
     train: ${paths.base_data_path}/tabula_muris_train_sharded/adata_0.h5ad
     test: ${paths.base_data_path}/tabula_muris_test_sharded/adata_0.h5ad
-    config: ${paths.base_release_path}/tabula_muris_negative_binomial.yaml
-    ckpt: ${paths.base_release_path}/tabula_muris_negative_binomial.ckpt
-    mu_size_factor: ${paths.base_release_path}/tabula_muris_log_size_factor_mu.pkl
-    sd_size_factor: ${paths.base_release_path}/tabula_muris_log_size_factor_sd.pkl
+    config: ${paths.base_release_path}/resubmission/tabula_muris_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/tabula_muris_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/tabula_muris_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/tabula_muris_log_size_factor_sd.pkl
 
   parse1m:
     train: ${paths.base_data_path}/parse1m_train.h5ad
     test: ${paths.base_data_path}/parse1m_test.h5ad
-    config: ${paths.base_release_path}/czb_cd4_naive_holdout_negative_binomial.yaml
-    ckpt: ${paths.base_release_path}/czb_cd4_naive_holdout_negative_binomial.ckpt
-    mu_size_factor: ${paths.base_release_path}/czb_cd4_naive_holdout_log_size_factor_mu.pkl
-    sd_size_factor: ${paths.base_release_path}/czb_cd4_naive_holdout_log_size_factor_sd.pkl
+    config: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_log_size_factor_sd.pkl
 
   replogle:
     train: ${paths.base_data_path}/replogle_train.h5ad
     test: ${paths.base_data_path}/replogle_test.h5ad
-    config: ${paths.base_release_path}/replogle_negative_binomial.yaml
-    ckpt: ${paths.base_release_path}/replogle_negative_binomial.ckpt
-    mu_size_factor: ${paths.base_release_path}/replogle_log_size_factor_munew.pkl
-    sd_size_factor: ${paths.base_release_path}/replogle_log_size_factor_sdnew.pkl
+    config: ${paths.base_release_path}/resubmission/replogle_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/replogle_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/replogle_log_size_factor_munew.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/replogle_log_size_factor_sdnew.pkl
 
   homo_sapiens:
     train: null
