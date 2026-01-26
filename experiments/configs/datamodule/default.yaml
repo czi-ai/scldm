@@ -52,7 +52,7 @@ dataset_params:
     adata_key: null
     condition_strategy: mutually_exclusive
     metadata_genes: null
-    metadata_json: ${paths.base_repo_path}/scldm/metadata/dentategyrus_train.json
+    metadata_json: ${paths.base_repo_path}/metadata/dentategyrus_train.json
 
   hlca:
     n_genes: 27997
@@ -68,7 +68,7 @@ dataset_params:
     adata_key: X_counts
     condition_strategy: mutually_exclusive
     metadata_genes: null
-    metadata_json: null
+    metadata_json: ${paths.base_repo_path}/metadata/hlca_train.json
 
   tabula_muris:
     n_genes: 19734
@@ -84,7 +84,7 @@ dataset_params:
     adata_key: X_counts
     condition_strategy: mutually_exclusive
     metadata_genes: null
-    metadata_json: null
+    metadata_json: ${paths.base_repo_path}/metadata/tabula_muris_train.json
 
   parse1m:
     n_genes: 2000
@@ -102,7 +102,7 @@ dataset_params:
     adata_key: null
     condition_strategy: joint
     metadata_genes: null
-    metadata_json: ${paths.base_repo_path}/scldm/metadata/parse1m_train.json
+    metadata_json: ${paths.base_repo_path}/metadata/parse1m_train.json
 
   replogle:
     n_genes: 2000
@@ -120,7 +120,7 @@ dataset_params:
     adata_key: null
     condition_strategy: joint
     metadata_genes: null
-    metadata_json: ${paths.base_repo_path}/scldm/metadata/replogle_train.json
+    metadata_json: ${paths.base_repo_path}/metadata/replogle_train.json
 
   homo_sapiens:
     n_genes: 36130
@@ -133,4 +133,4 @@ dataset_params:
     adata_key: null
     condition_strategy: "mutually_exclusive"
     metadata_genes: ${paths.dataset_paths.${datamodule.dataset}.metadata_genes}
-    metadata_json: null
+    metadata_json: ${paths.base_repo_path}/metadata/census_genes.json
