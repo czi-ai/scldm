@@ -1,11 +1,12 @@
 
 datamodule:
   _target_: scldm.datamodule.DataModule
-  train_adata_path: ${paths.dataset_paths.${datamodule.dataset}.train}
-  test_adata_path: ${paths.dataset_paths.${datamodule.dataset}.test}
+  train_adata_path: null # ${paths.dataset_paths.${datamodule.dataset}.train}
+  test_adata_path: null # ${paths.dataset_paths.${datamodule.dataset}.test}
   adata_attr: ${..dataset_params.${..dataset}.adata_attr}
   adata_key: ${..dataset_params.${..dataset}.adata_key}
   vocabulary_encoder: ${datamodule.vocabulary_encoder}
+  allow_missing_train: false
   batch_size: 32
   test_batch_size: 32
   num_workers: 4

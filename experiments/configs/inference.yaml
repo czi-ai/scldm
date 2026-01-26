@@ -14,6 +14,9 @@ datamodule:
   datamodule:
     sample_genes: expressed
     test_batch_size: 64
+    allow_missing_train: true
+    train_adata_path: null
+    test_adata_path: ${paths.dataset_paths.${datamodule.dataset}.test}
 
 training:
   trainer:
