@@ -64,6 +64,27 @@ can change this with the `--destination` flag. If you don't want to download all
 files, you can specify `--group datasets`, `--group vae_census`, `--group fm_observational`, and/or
 `--group fm_perturbation` to download just those artifacts.
 
+## Dataset files (AnnData) and metadata
+
+Train/test AnnData paths are defined in `experiments/configs/paths/datasets.yaml` and are
+expected to live under `paths.base_data_path` (override this path as needed). The default
+relative layout is:
+
+- `dentate_gyrus`: `dentategyrus_train.h5ad`, `dentategyrus_test.h5ad`
+- `hlca`: `hlca_train_sharded/adata_0.h5ad`, `hlca_test_sharded/adata_0.h5ad`
+- `tabula_muris`: `tabula_muris_train_sharded/adata_0.h5ad`, `tabula_muris_test_sharded/adata_0.h5ad`
+- `parse1m`: `parse1m_train.h5ad`, `parse1m_test.h5ad`
+- `replogle`: `replogle_train.h5ad`, `replogle_test.h5ad`
+
+Download sources for these files are referenced in the inline comments of
+`experiments/configs/paths/datasets.yaml` (CFGen figshare for `hlca`/`tabula_muris`,
+Parse1m figshare, and Replogle figshare/GEO). These datasets are not fetched by
+`scldm-download-artifacts`, so you must download them separately and place them at the paths
+above (or override `paths.base_data_path` and dataset paths in Hydra).
+
+The JSON files under `metadata/` are required to define perturbation splits for the
+`parse1m` and `replogle` datasets, so make sure they are present when running those configs.
+
 ## Training
 
 ### 1. VAE Training
