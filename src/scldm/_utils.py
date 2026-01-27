@@ -245,9 +245,26 @@ def create_anndata_from_inference_output(
     output: dict[str, torch.Tensor],
     datamodule: Any,
 ) -> ad.AnnData:
-    z = output["z"].numpy()
-    generated_counts = sparse.csr_matrix(output["reconstructed_counts"].numpy())
-    genes = output[f"{ModelEnum.GENES.value}"][0, :]
+    obsm: dict[str, np.ndarray] = {}
+    if "z" in output:
+        obsm["z"] = output["z"].numpy()
+    if "z_mean_flat" in output:
+        obsm["z_mean_flat"] = output["z_mean_flat"].numpy()
+    if "z_sample_flat" in output:
+        obsm["z_sample_flat"] = output["z_sample_flat"].numpy()
+    if not obsm:
+        raise KeyError(f"Missing latent keys in inference output. Keys: {sorted(output.keys())}")
+
+    if "reconstructed_counts" in output:
+        generated_counts = sparse.csr_matrix(output["reconstructed_counts"].numpy())
+    elif ModelEnum.COUNTS.value in output:
+        generated_counts = sparse.csr_matrix(output[ModelEnum.COUNTS.value].numpy())
+    else:
+        raise KeyError(f"Missing counts in inference output. Keys: {sorted(output.keys())}")
+
+    if ModelEnum.GENES.value not in output:
+        raise KeyError(f"Missing genes in inference output. Keys: {sorted(output.keys())}")
+    genes = output[ModelEnum.GENES.value][0, :]
     var_names = datamodule.vocabulary_encoder.decode_genes(genes)
     if datamodule.vocabulary_encoder.labels is not None:
         obs = {
@@ -257,15 +274,13 @@ def create_anndata_from_inference_output(
     else:
         obs = {}
 
-    n_cells = len(z)
+    n_cells = generated_counts.shape[0]
     obs = pd.DataFrame(obs, index=np.arange(n_cells).astype(str))
 
     adata = ad.AnnData(
         X=generated_counts,
         obs=obs,
-        obsm={
-            "z": z,
-        },
+        obsm=obsm,
     )
     adata.var_names = var_names
     adata.layers["counts"] = adata.X.copy()
@@ -273,7 +288,7 @@ def create_anndata_from_inference_output(
 
 
 def process_inference_output(
-    output: list[ad.AnnData],
+    output: list[ad.AnnData | dict[str, Any]],
     datamodule: Any,
 ) -> ad.AnnData:
     logger.info("Processing inference output")
@@ -286,14 +301,31 @@ def process_inference_output(
                 flattened.extend(flatten_output(item))
             elif isinstance(item, ad.AnnData):
                 flattened.append(item)
+            elif isinstance(item, dict):
+                flattened.append(item)
             elif item is not None:
                 logger.warning(f"Unexpected output type in predict results: {type(item)}. Skipping.")
         return flattened
 
+    def collect_output_types(outputs):
+        types = []
+        for item in outputs:
+            if isinstance(item, list):
+                types.extend(collect_output_types(item))
+            else:
+                types.append(type(item).__name__)
+        return types
+
     flattened_output = flatten_output(output)
 
     if not flattened_output:
-        raise ValueError("No valid AnnData objects found in prediction output")
+        output_types = collect_output_types(output)
+        raise ValueError(f"No valid AnnData objects found in prediction output. Observed output types: {output_types}")
+
+    if all(isinstance(item, dict) for item in flattened_output):
+        if any(f"{ModelEnum.COUNTS.value}_generated_unconditional" in item for item in flattened_output):
+            return process_generation_output(flattened_output, datamodule)
+        flattened_output = [create_anndata_from_inference_output(item, datamodule) for item in flattened_output]
 
     logger.info(f"Concatenating {len(flattened_output)} AnnData objects")
     adata = ad.concat(flattened_output)
