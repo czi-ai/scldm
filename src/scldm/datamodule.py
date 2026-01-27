@@ -44,6 +44,7 @@ class DataModule(LightningDataModule):
         vocabulary_encoder: VocabularyEncoderSimplified,
         val_as_test: bool = True,
         data_path: Path | None = None,
+        allow_missing_train: bool = False,
         batch_size: int = 256,
         test_batch_size: int = 256,
         num_workers: int = 4,
@@ -67,6 +68,7 @@ class DataModule(LightningDataModule):
         self.train_adata_path = Path(train_adata_path) if train_adata_path is not None else None
         self.test_adata_path = Path(test_adata_path) if test_adata_path is not None else None
         self.val_as_test = val_as_test
+        self.allow_missing_train = allow_missing_train
         self.batch_size = batch_size
         self.test_batch_size = test_batch_size
         self.num_workers = num_workers
@@ -91,11 +93,19 @@ class DataModule(LightningDataModule):
             _, self.n_cells, _ = get_tissue_adata_files(self.data_path, "train")
             self.train_metadata = None
         elif self.train_adata_path is not None:
-            train_adata = ad.read_h5ad(self.train_adata_path)
-            self.n_cells = train_adata.n_obs
-            self.train_metadata = None
+            if self.train_adata_path.exists():
+                train_adata = ad.read_h5ad(self.train_adata_path)
+                self.n_cells = train_adata.n_obs
+                self.train_metadata = None
+            elif self.allow_missing_train:
+                logger.info("Train adata path missing; continuing in predict-only mode")
+                self.n_cells = 0
+                self.train_metadata = None
+            else:
+                raise FileNotFoundError(f"Train adata path not found: {self.train_adata_path}")
         else:
             logger.info("No train adata path provided, make sure to set up datamodule for inference")
+            self.n_cells = 0
 
         self._adata_inference = None
 
@@ -252,6 +262,8 @@ class DataModule(LightningDataModule):
                 self._setup_prediction_only()
                 return
             else:
+                if self.test_adata_path is None:
+                    raise ValueError("test_adata_path must be set for predict when adata_inference is not provided")
                 if not hasattr(self, "test_adata") or self.test_adata is None:
                     self.test_adata = ad.read_h5ad(self.test_adata_path)
                 self._setup_prediction_from_test()

@@ -5,42 +5,46 @@ dataset_paths:
   dentate_gyrus:
     train: ${paths.base_data_path}/dentategyrus_train.h5ad
     test: ${paths.base_data_path}/dentategyrus_test.h5ad
-    config: ${paths.base_release_path}/fm_observational/dentate_gyrus.yaml
-    ckpt: ${paths.base_release_path}/fm_observational/dentate_gyrus.ckpt
-    mu_size_factor: ${paths.base_release_path}/fm_observational/dentate_gyrus_log_size_factor_mu.pkl
-    sd_size_factor: ${paths.base_release_path}/fm_observational/dentate_gyrus_log_size_factor_sd.pkl
+    config: ${paths.base_release_path}/resubmission/dentate_gyrus_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/dentate_gyrus_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/dentate_gyrus_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/dentate_gyrus_log_size_factor_sd.pkl
 
   hlca:
-    train: ${paths.base_data_path}/hlca_train_sharded/adata_0.h5ad
-    test: ${paths.base_data_path}/hlca_test_sharded/adata_0.h5ad
-    config: ${paths.base_release_path}/fm_observational/hlca.yaml
-    ckpt: ${paths.base_release_path}/fm_observational/hlca.ckpt
-    mu_size_factor: ${paths.base_release_path}/fm_observational/hlca_log_size_factor_mu.pkl
-    sd_size_factor: ${paths.base_release_path}/fm_observational/hlca_log_size_factor_sd.pkl
+    train: /mnt/czi-sci-ai/project-scg-llm-pvc/release/datasets/hlca_train_sharded/adata_0.h5ad # download from CFGen paper https://figshare.com/s/14c2ad9163ae794ae506
+    test: /mnt/czi-sci-ai/project-scg-llm-pvc/release/datasets/hlca_test_sharded/adata_0.h5ad # download from CFGen paper https://figshare.com/s/14c2ad9163ae794ae506
+    config: ${paths.base_release_path}/resubmission/hlca_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/hlca_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/hlca_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/hlca_log_size_factor_sd.pkl
 
   tabula_muris:
-    train: ${paths.base_data_path}/tabula_muris_train_sharded/adata_0.h5ad
-    test: ${paths.base_data_path}/tabula_muris_test_sharded/adata_0.h5ad
-    config: ${paths.base_release_path}/fm_observational/tabula_muris.yaml
-    ckpt: ${paths.base_release_path}/fm_observational/tabula_muris.ckpt
-    mu_size_factor: ${paths.base_release_path}/fm_observational/tabula_muris_log_size_factor_mu.pkl
-    sd_size_factor: ${paths.base_release_path}/fm_observational/tabula_muris_log_size_factor_sd.pkl
+    train: ${paths.base_data_path}/tabula_muris_train_sharded/adata_0.h5ad # download from CFGen paper https://figshare.com/s/14c2ad9163ae794ae506
+    test: ${paths.base_data_path}/tabula_muris_test_sharded/adata_0.h5ad # download from CFGen paper https://figshare.com/s/14c2ad9163ae794ae506
+    config: ${paths.base_release_path}/resubmission/tabula_muris_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/tabula_muris_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/tabula_muris_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/tabula_muris_log_size_factor_sd.pkl
 
-  czb_cd4_naive_holdout:
-    train: ${paths.base_data_path}/czb_data/CD4_Naive_holdout/train.h5ad
-    test: ${paths.base_data_path}/czb_data/CD4_Naive_holdout/test.h5ad
-    mu_size_factor: ${paths.base_release_path}/fm_perturbation/czb_cd4_naive_holdout_log_size_factor_mu.pkl
-    sd_size_factor: ${paths.base_release_path}/fm_perturbation/czb_cd4_naive_holdout_log_size_factor_sd.pkl
+  parse1m:
+    train: /mnt/czi-sci-ai/project-scg-llm-pvc/release/datasets/CD4_Naive_holdout/train.h5ad # download from https://figshare.com/articles/dataset/pbmc_parse/28589774?file=53372768
+    test: /mnt/czi-sci-ai/project-scg-llm-pvc/release/datasets/CD4_Naive_holdout/test.h5ad # download from https://figshare.com/articles/dataset/pbmc_parse/28589774?file=53372768
+    config: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_log_size_factor_sd.pkl
 
   replogle:
-    train: ${paths.base_data_path}/czb_data/Replogle_Nadig_from_STATE/processed/train_asSTATE_hvg.h5ad
-    test: ${paths.base_data_path}/czb_data/Replogle_Nadig_from_STATE/processed/test_asSTATE_hvg.h5ad
-    mu_size_factor: ${paths.base_release_path}/fm_perturbation/replogle_log_size_factor_mu.pkl
-    sd_size_factor: ${paths.base_release_path}/fm_perturbation/replogle_log_size_factor_sd.pkl
+    train: /mnt/czi-sci-ai/project-scg-llm-pvc/release/datasets/replogle/train_asSTATE_hvg.h5ad # download from https://plus.figshare.com/articles/dataset/_Mapping_information-rich_genotype-phenotype_landscapes_with_genome-scale_Perturb-seq_Replogle_et_al_2022_processed_Perturb-seq_datasets/20029387 and https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE264667
+    test: /mnt/czi-sci-ai/project-scg-llm-pvc/release/datasets/replogle/test_asSTATE_hvg.h5ad # download from https://plus.figshare.com/articles/dataset/_Mapping_information-rich_genotype-phenotype_landscapes_with_genome-scale_Perturb-seq_Replogle_et_al_2022_processed_Perturb-seq_datasets/20029387 and https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE264667
+    config: ${paths.base_release_path}/resubmission/replogle_negative_binomial.yaml
+    ckpt: ${paths.base_release_path}/resubmission/replogle_negative_binomial.ckpt
+    mu_size_factor: ${paths.base_release_path}/resubmission/replogle_log_size_factor_munew.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/replogle_log_size_factor_sdnew.pkl
 
   homo_sapiens:
-    train: null
-    test: null
+    train: null # download from https://chanzuckerberg.github.io/cellxgene-census/
+    test: null # download from https://chanzuckerberg.github.io/cellxgene-census/
     metadata_genes: ${paths.base_release_path}/vae_census/concatenated_unique_genes.parquet
     config: ${paths.base_release_path}/vae_census/20M.yaml
     ckpt: ${paths.base_release_path}/vae_census/20M.ckpt

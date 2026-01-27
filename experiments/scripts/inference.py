@@ -70,6 +70,7 @@ def train(cfg) -> None:
         strategy="auto",
         logger=loggers_list if len(loggers_list) > 0 else False,
         callbacks=callbacks_list,
+        # limit_predict_batches=1,
     )
 
     if module_ckpt.exists():

@@ -23,16 +23,16 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
-  "anndata",
+  "anndata<=0.10.9",
   "boto3",
   "cellxgene-census==1.16.2",
   "einops",
   "ema-pytorch==0.7.7",
   "hydra-core",
   "lightning==2.4",
-  "numpy",
+  "numpy<=2.3",
   "omegaconf",
-  "pandas",
+  "pandas<=2.3.3",
   "pot[backend-torch]",
   "psutil",
   "pybiomart",

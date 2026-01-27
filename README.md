@@ -49,21 +49,140 @@ pip install "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git
 uv pip install "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 ```
 
+### Environment setup (required before `uv run`)
+
+`uv run` assumes you already have an environment with dependencies installed. Because
+`cellarium-ml` must be installed from source, set up the environment first:
+
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -e . "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
+```
+
+If you prefer, you can use `pip` in an existing environment instead of `uv pip`.
+
 ## Checkpoints and other artifacts
 
 To download model checkpoints and other required artifacts:
 
 ```bash
-scldm-download-artifacts
-# or
-uv run scldm-download-artifacts
+scldm-download-artifacts --group resubmission
+# or (after environment setup)
+uv run scldm-download-artifacts --group resubmission
 ```
 
-This will automatically download all artifacts to the `_artifacts` subdirectory. You
-can change this with the `--destination` flag. If you don't want to download all
-files, you can specify `--group datasets`, `--group vae_census`, `--group fm_observational`, and/or
-`--group fm_perturbation` to download just those artifacts.
+Downloads come from the public `s3://czi-scldm` bucket using unsigned requests by
+default. Files are placed under the `scldm/_artifacts` directory unless you override
+`--destination`.
 
+We recommend downloading only `--group resubmission`, since it includes the primary
+checkpoints and configs. The `vae_census` artifacts are separate and unchanged, so only
+download `--group vae_census` if you need those. The `datasets` group contains the
+`dentategyrus` train/test AnnData files. You can pass `--group` multiple times or use
+comma-separated values (use `all` to fetch everything).
+
+## Dataset files (AnnData) and metadata
+
+Train/test AnnData paths are defined in `experiments/configs/paths/datasets.yaml` and are
+expected to live under `paths.base_data_path` (override this path as needed). The default
+relative layout is:
+
+- `dentate_gyrus`: `dentategyrus_train.h5ad`, `dentategyrus_test.h5ad`
+- `hlca`: `hlca_train_sharded/adata_0.h5ad`, `hlca_test_sharded/adata_0.h5ad`
+- `tabula_muris`: `tabula_muris_train_sharded/adata_0.h5ad`, `tabula_muris_test_sharded/adata_0.h5ad`
+- `parse1m`: `parse1m_train.h5ad`, `parse1m_test.h5ad`
+- `replogle`: `replogle_train.h5ad`, `replogle_test.h5ad`
+
+Download sources for these files are referenced in the inline comments of
+`experiments/configs/paths/datasets.yaml` (CFGen figshare for `hlca`/`tabula_muris`,
+Parse1m figshare, and Replogle figshare/GEO). These datasets are not fetched by
+`scldm-download-artifacts`, so you must download them separately and place them at the paths
+above (or override `paths.base_data_path` and dataset paths in Hydra).
+
+The JSON files under `metadata/` are required to define perturbation splits for the
+`parse1m` and `replogle` datasets, so make sure they are present when running those configs.
+
+## Training
+
+### 1. VAE Training
+
+```bash
+# Using uv run (after environment setup above)
+uv run python experiments/scripts/train.py \
+  paths.base_data_path=/path/to/your/data \
+  experiment_name=my_vae_experiment \
+  training.num_epochs=100
+
+# Or without uv
+cd experiments
+python scripts/train.py \
+  paths.base_data_path=/path/to/your/data \
+  experiment_name=my_vae_experiment \
+  training.num_epochs=100
+```
+
+Key config overrides:
+- `paths.base_data_path`: Path to dataset directory
+- `experiment_name`: Name for checkpoints/logs
+- `datamodule.dataset`: Dataset name (e.g., `dentate_gyrus`)
+- `training.num_epochs`: Number of training epochs
+- `model.batch_size`: Training batch size
+
+Checkpoints saved to: `experiments/checkpoints/{experiment_name}/`
+
+### 2. Flow Matching (LDM) Training
+
+Requires a trained VAE checkpoint first.
+
+```bash
+# Using uv run (after environment setup above)
+uv run python experiments/scripts/train_ldm.py \
+  paths.base_data_path=/path/to/your/data \
+  experiment_name=my_ldm_experiment \
+  model.module.vae_as_tokenizer.load_from_checkpoint.ckpt_path=/path/to/vae/checkpoints \
+  model.module.vae_as_tokenizer.load_from_checkpoint.job_name=my_vae_experiment
+
+# Or without uv
+cd experiments
+python scripts/train_ldm.py \
+  paths.base_data_path=/path/to/your/data \
+  experiment_name=my_ldm_experiment \
+  model.module.vae_as_tokenizer.load_from_checkpoint.ckpt_path=/path/to/vae/checkpoints \
+  model.module.vae_as_tokenizer.load_from_checkpoint.job_name=my_vae_experiment
+```
+
+Key config overrides:
+- `model.module.vae_as_tokenizer.load_from_checkpoint.ckpt_path`: Directory containing VAE checkpoint
+- `model.module.vae_as_tokenizer.load_from_checkpoint.job_name`: VAE experiment name
+- `model.module.vae_as_tokenizer.train`: Set to `true` to fine-tune VAE (default: `false`)
+
+## Inference / Sampling
+
+```bash
+# Using uv run (after environment setup above)
+uv run python experiments/scripts/inference.py \
+  ckpt_file=/path/to/ldm/checkpoint.ckpt \
+  config_file=/path/to/ldm/config.yaml \
+  datamodule.dataset=dentate_gyrus \
+  datamodule.datamodule.test_batch_size=128
+
+# Or without uv
+cd experiments
+python scripts/inference.py \
+  ckpt_file=/path/to/ldm/checkpoint.ckpt \
+  config_file=/path/to/ldm/config.yaml \
+  datamodule.dataset=dentate_gyrus \
+  datamodule.datamodule.test_batch_size=128
+```
+
+Key config overrides:
+- `ckpt_file`: Path to LDM checkpoint
+- `config_file`: Path to saved config.yaml from training
+- `model.module.generation_args.guidance_weight`: Classifier-free guidance weight
+- `inference_path`: Output directory (default: `outputs/`)
+
+Output: AnnData file saved to `{inference_path}/{dataset}_generated_{idx}.h5ad`
 
 ## Release notes
 

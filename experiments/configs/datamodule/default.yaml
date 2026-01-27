@@ -1,11 +1,12 @@
 
 datamodule:
   _target_: scldm.datamodule.DataModule
-  train_adata_path: ${paths.dataset_paths.${datamodule.dataset}.train}
-  test_adata_path: ${paths.dataset_paths.${datamodule.dataset}.test}
+  train_adata_path: null # ${paths.dataset_paths.${datamodule.dataset}.train}
+  test_adata_path: null # ${paths.dataset_paths.${datamodule.dataset}.test}
   adata_attr: ${..dataset_params.${..dataset}.adata_attr}
   adata_key: ${..dataset_params.${..dataset}.adata_key}
   vocabulary_encoder: ${datamodule.vocabulary_encoder}
+  allow_missing_train: false
   batch_size: 32
   test_batch_size: 32
   num_workers: 4
@@ -20,7 +21,7 @@ datamodule:
 
 vocabulary_encoder:
   _target_: scldm.encoder.VocabularyEncoderSimplified
-  adata_path: ${paths.dataset_paths.${..dataset}.train}
+  adata_path: null
   mask_token: "<MASK>"
   mask_token_idx: 0
   n_genes: ${..dataset_params.${..dataset}.n_genes}
@@ -30,11 +31,13 @@ vocabulary_encoder:
   sd_size_factor: ${..dataset_params.${..dataset}.sd_size_factor}
   condition_strategy: ${..dataset_params.${..dataset}.condition_strategy}
   metadata_genes: ${..dataset_params.${..dataset}.metadata_genes}
+  metadata_json: ${..dataset_params.${..dataset}.metadata_json}
 
 # Dataset selection (override this in experiments)
 dataset: dentate_gyrus
 
 # Dataset-specific parameters
+# NOTE: mu_size_factor and sd_size_factor paths are expected under _artifacts.
 dataset_params:
   dentate_gyrus:
     n_genes: 17002
@@ -44,12 +47,13 @@ dataset_params:
       clusters: 1.0
     genes_seq_len: 6147
     sample_genes: expressed
-    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
-    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
+    mu_size_factor: ${paths.base_release_path}/resubmission/dentate_gyrus_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/dentate_gyrus_log_size_factor_sd.pkl
     adata_attr: X
     adata_key: null
     condition_strategy: mutually_exclusive
     metadata_genes: null
+    metadata_json: ${paths.base_repo_path}/metadata/dentategyrus_train.json
 
   hlca:
     n_genes: 27997
@@ -59,12 +63,13 @@ dataset_params:
       cell_type: 1.0
     genes_seq_len: 10186
     sample_genes: expressed
-    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
-    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
+    mu_size_factor: ${paths.base_release_path}/resubmission/hlca_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/hlca_log_size_factor_sd.pkl
     adata_attr: layers
     adata_key: X_counts
     condition_strategy: mutually_exclusive
     metadata_genes: null
+    metadata_json: ${paths.base_repo_path}/metadata/hlca_train.json
 
   tabula_muris:
     n_genes: 19734
@@ -74,14 +79,15 @@ dataset_params:
       tissue: 1.0
     genes_seq_len: 9059
     sample_genes: expressed
-    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
-    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
+    mu_size_factor: ${paths.base_release_path}/resubmission/tabula_muris_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/tabula_muris_log_size_factor_sd.pkl
     adata_attr: layers
     adata_key: X_counts
     condition_strategy: mutually_exclusive
     metadata_genes: null
+    metadata_json: ${paths.base_repo_path}/metadata/tabula_muris_train.json
 
-  czb_cd4_naive_holdout:
+  parse1m:
     n_genes: 2000
     class_vocab_sizes:
       cell_type: 18
@@ -91,12 +97,13 @@ dataset_params:
       cytokine: 1.0
     genes_seq_len: 2000
     sample_genes: all
-    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
-    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
+    mu_size_factor: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_log_size_factor_mu.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/czb_cd4_naive_holdout_log_size_factor_sd.pkl
     adata_attr: X
     adata_key: null
     condition_strategy: joint
     metadata_genes: null
+    metadata_json: ${paths.base_repo_path}/metadata/parse1m_train.json
 
   replogle:
     n_genes: 2000
@@ -108,12 +115,13 @@ dataset_params:
       gene: 1.0
     genes_seq_len: 2000
     sample_genes: all
-    mu_size_factor: ${paths.dataset_paths.${datamodule.dataset}.mu_size_factor}
-    sd_size_factor: ${paths.dataset_paths.${datamodule.dataset}.sd_size_factor}
+    mu_size_factor: ${paths.base_release_path}/resubmission/replogle_log_size_factor_munew.pkl
+    sd_size_factor: ${paths.base_release_path}/resubmission/replogle_log_size_factor_sdnew.pkl
     adata_attr: X
     adata_key: null
     condition_strategy: joint
     metadata_genes: null
+    metadata_json: ${paths.base_repo_path}/metadata/replogle_train.json
 
   homo_sapiens:
     n_genes: 36130
@@ -126,3 +134,4 @@ dataset_params:
     adata_key: null
     condition_strategy: "mutually_exclusive"
     metadata_genes: ${paths.dataset_paths.${datamodule.dataset}.metadata_genes}
+    metadata_json: ${paths.base_repo_path}/metadata/census_genes.json

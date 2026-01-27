@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import anndata as ad
+import hydra
 import numpy as np
 import pandas as pd
 import torch
@@ -56,6 +57,55 @@ def wsd_schedule(
             return final_lr_factor
 
     return schedule
+
+
+def setup_datamodule_and_steps(cfg: DictConfig, world_size: int, num_epochs: int):
+    """Setup datamodule and compute training steps.
+
+    This function instantiates the datamodule, computes the effective number of
+    training steps based on dataset size and batch size, and updates the config
+    accordingly.
+
+    Parameters
+    ----------
+    cfg
+        Hydra configuration object
+    world_size
+        Number of GPUs/processes for distributed training
+    num_epochs
+        Number of training epochs
+
+    Returns
+    -------
+    datamodule
+        Instantiated datamodule
+    """
+    datamodule = hydra.utils.instantiate(cfg.datamodule.datamodule)
+    n_cells = datamodule.n_cells
+    batch_size = cfg.model.batch_size
+
+    num_steps_per_epoch = n_cells // (batch_size * world_size)
+    effective_steps = num_epochs * num_steps_per_epoch
+
+    logger.info(f"Dataset size: {n_cells} cells")
+    logger.info(f"Batch size: {batch_size}, World size: {world_size}")
+    logger.info(f"Steps per epoch: {num_steps_per_epoch}")
+    logger.info(f"Total training steps: {effective_steps}")
+
+    cfg.training.trainer.max_steps = effective_steps
+
+    # Update scheduler warmup (10% of total steps)
+    warmup_steps = int(0.1 * effective_steps)
+
+    if hasattr(cfg.model.module, "vae_scheduler") and cfg.model.module.vae_scheduler is not None:
+        cfg.model.module.vae_scheduler.num_warmup_steps = warmup_steps
+        logger.info(f"VAE warmup steps: {warmup_steps}")
+
+    if hasattr(cfg.model.module, "diffusion_scheduler") and cfg.model.module.diffusion_scheduler is not None:
+        cfg.model.module.diffusion_scheduler.num_warmup_steps = warmup_steps
+        logger.info(f"Diffusion warmup steps: {warmup_steps}")
+
+    return datamodule
 
 
 def sort_h5ad_files(path: Path) -> list[str]:
@@ -195,9 +245,26 @@ def create_anndata_from_inference_output(
     output: dict[str, torch.Tensor],
     datamodule: Any,
 ) -> ad.AnnData:
-    z = output["z"].numpy()
-    generated_counts = sparse.csr_matrix(output["reconstructed_counts"].numpy())
-    genes = output[f"{ModelEnum.GENES.value}"][0, :]
+    obsm: dict[str, np.ndarray] = {}
+    if "z" in output:
+        obsm["z"] = output["z"].numpy()
+    if "z_mean_flat" in output:
+        obsm["z_mean_flat"] = output["z_mean_flat"].numpy()
+    if "z_sample_flat" in output:
+        obsm["z_sample_flat"] = output["z_sample_flat"].numpy()
+    if not obsm:
+        raise KeyError(f"Missing latent keys in inference output. Keys: {sorted(output.keys())}")
+
+    if "reconstructed_counts" in output:
+        generated_counts = sparse.csr_matrix(output["reconstructed_counts"].numpy())
+    elif ModelEnum.COUNTS.value in output:
+        generated_counts = sparse.csr_matrix(output[ModelEnum.COUNTS.value].numpy())
+    else:
+        raise KeyError(f"Missing counts in inference output. Keys: {sorted(output.keys())}")
+
+    if ModelEnum.GENES.value not in output:
+        raise KeyError(f"Missing genes in inference output. Keys: {sorted(output.keys())}")
+    genes = output[ModelEnum.GENES.value][0, :]
     var_names = datamodule.vocabulary_encoder.decode_genes(genes)
     if datamodule.vocabulary_encoder.labels is not None:
         obs = {
@@ -207,15 +274,13 @@ def create_anndata_from_inference_output(
     else:
         obs = {}
 
-    n_cells = len(z)
+    n_cells = generated_counts.shape[0]
     obs = pd.DataFrame(obs, index=np.arange(n_cells).astype(str))
 
     adata = ad.AnnData(
         X=generated_counts,
         obs=obs,
-        obsm={
-            "z": z,
-        },
+        obsm=obsm,
     )
     adata.var_names = var_names
     adata.layers["counts"] = adata.X.copy()
@@ -223,10 +288,83 @@ def create_anndata_from_inference_output(
 
 
 def process_inference_output(
-    output: list[ad.AnnData],
+    output: list[ad.AnnData | dict[str, Any]],
     datamodule: Any,
 ) -> ad.AnnData:
     logger.info("Processing inference output")
-    adata = ad.concat(output)
+
+    # Flatten nested lists (PyTorch Lightning may return [[AnnData], [AnnData], ...])
+    def flatten_output(outputs):
+        flattened = []
+        for item in outputs:
+            if isinstance(item, list):
+                flattened.extend(flatten_output(item))
+            elif isinstance(item, ad.AnnData):
+                flattened.append(item)
+            elif isinstance(item, dict):
+                flattened.append(item)
+            elif item is not None:
+                logger.warning(f"Unexpected output type in predict results: {type(item)}. Skipping.")
+        return flattened
+
+    def collect_output_types(outputs):
+        types = []
+        for item in outputs:
+            if isinstance(item, list):
+                types.extend(collect_output_types(item))
+            else:
+                types.append(type(item).__name__)
+        return types
+
+    flattened_output = flatten_output(output)
+
+    if not flattened_output:
+        output_types = collect_output_types(output)
+        raise ValueError(f"No valid AnnData objects found in prediction output. Observed output types: {output_types}")
+
+    if all(isinstance(item, dict) for item in flattened_output):
+        if any(f"{ModelEnum.COUNTS.value}_generated_unconditional" in item for item in flattened_output):
+            return process_generation_output(flattened_output, datamodule)
+        flattened_output = [create_anndata_from_inference_output(item, datamodule) for item in flattened_output]
+
+    logger.info(f"Concatenating {len(flattened_output)} AnnData objects")
+    adata = ad.concat(flattened_output)
 
     return adata
+
+
+def load_validate_statedict_config(
+    checkpoints: dict[str, Any],
+    config: DictConfig,
+    pretrain_config: DictConfig,
+) -> tuple[dict[str, Any], DictConfig]:
+    """Load VAE state dict from checkpoint and update config with pretrained VAE architecture.
+
+    This function extracts the VAE state dict from a checkpoint (stripping the "vae_model."
+    prefix), copies the VAE model config from the pretrained config to the current config,
+    and sets the diffusion model input dimensions from the VAE latent space.
+
+    Parameters
+    ----------
+    checkpoints
+        Checkpoint dictionary containing "state_dict" key
+    config
+        Current configuration to update
+    pretrain_config
+        Configuration from the pretrained VAE checkpoint
+
+    Returns
+    -------
+    vae_state_dict
+        VAE state dictionary with "vae_model." prefix stripped
+    config
+        Updated configuration with VAE architecture from pretrained config
+    """
+    vae_state_dict = {
+        k.replace("vae_model.", "", 1): v for k, v in checkpoints["state_dict"].items() if k.startswith("vae_model.")
+    }
+    config.model.module.vae_model = pretrain_config.model.module.vae_model
+    config.model.module.diffusion_model.n_embed_input = pretrain_config.model.module.vae_model.encoder.n_embed_latent
+    config.model.module.diffusion_model.seq_len = pretrain_config.model.module.vae_model.encoder.n_inducing_points
+    config.model.decoder_name = pretrain_config.model.decoder_name
+    return vae_state_dict, config

@@ -28,7 +28,7 @@ logger:
     _partial_: true
     save_dir: ${paths.base_experiment_path}/wandb_logger
     project: ${experiment_name}
-    entity: scg-vae
+    entity: scg-vae  # TODO: Change to your wandb entity/organization
     name: null
     job_type: sweep
     id: null

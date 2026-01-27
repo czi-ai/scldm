@@ -1,4 +1,6 @@
 # Dataset and release roots
-base_data_path: _artifacts/datasets
-base_release_path: _artifacts/
+# Use absolute paths so entry points can run from any cwd
+base_repo_path: ${hydra:runtime.cwd}
+base_data_path: /work/_artifacts/datasets
+base_release_path: /work/_artifacts
 base_experiment_path: experiments/

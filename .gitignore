@@ -36,3 +36,8 @@ SETUP_NOTES.md
 
 # model assets and artifacts (mostly large files)
 _artifacts/
+
+outputs/
+checkpoints/
+csv_logger/
+wandb_logger/

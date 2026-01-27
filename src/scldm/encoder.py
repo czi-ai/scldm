@@ -1,3 +1,4 @@
+import json
 import pickle
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -23,12 +24,19 @@ class VocabularyEncoderSimplified:
     sd_size_factor: Path | str | None = None
     condition_strategy: Literal["mutually_exclusive", "joint"] = "mutually_exclusive"
     metadata_genes: Path | str | None = None
+    metadata_json: Path | str | None = None
 
     _token2idx: dict[str, int] = field(init=False, repr=False)
     _idx2token: dict[int, str] = field(init=False, repr=False)
 
     def __post_init__(self):
-        if self.adata_path is not None:
+        metadata_payload = None
+        if self.metadata_json is not None:
+            metadata_path = Path(self.metadata_json)
+            with metadata_path.open("r", encoding="utf-8") as f:
+                metadata_payload = json.load(f)
+
+        if self.adata_path is not None and metadata_payload is None:
             self.adata = ad.read_h5ad(self.adata_path)
         else:
             self.adata = None
@@ -39,6 +47,8 @@ class VocabularyEncoderSimplified:
             self.gene_symbol_to_ensembl = dict(
                 zip(self.metadata_genes["feature_name"].values, self.metadata_genes["feature_id"].values, strict=False)
             )
+        elif metadata_payload is not None:
+            self.genes = np.asarray(metadata_payload["genes"])
         else:
             self.genes = self.adata.var_names.values
 
@@ -54,6 +64,13 @@ class VocabularyEncoderSimplified:
             self.labels = {
                 label: self.adata.obs[label].cat.categories.tolist() for label in self.class_vocab_sizes.keys()
             }
+        elif metadata_payload is not None:
+            label_payload = metadata_payload.get("labels", {})
+            self.labels = {}
+            for label in self.class_vocab_sizes.keys():
+                if label not in label_payload:
+                    raise ValueError(f"metadata_json missing label categories for '{label}'")
+                self.labels[label] = label_payload[label]
         else:
             self.labels = None
 
@@ -94,23 +111,27 @@ class VocabularyEncoderSimplified:
                         self.classes2idx[label][k]: v for k, v in sd_size_factor_dict[label].items()
                     }
         elif hasattr(self, "condition_strategy") and self.condition_strategy == "joint":
+            joint_class = "_".join(self.class_vocab_sizes.keys())
+            self.joint_key = joint_class
+            self.joint_components = list(self.class_vocab_sizes.keys())
             if self.mu_size_factor is not None:
                 mu_size_factor_dict = pickle.load(open(self.mu_size_factor, "rb"))
                 self.mu_size_factor = {}
-                self.mu_size_factor["cell_type_cytokine"] = mu_size_factor_dict["cell_type_cytokine"]
+                self.mu_size_factor[joint_class] = mu_size_factor_dict[joint_class]
                 self.joint_idx_2_classes = {}
-                for _idx, token in enumerate(mu_size_factor_dict["cell_type_cytokine"].keys()):
-                    # get cell_type and cytokine from token
-                    cell_type, cytokine = token.split("_")
+                class1, class2 = self.class_vocab_sizes.keys()
+                for _idx, token in enumerate(mu_size_factor_dict[joint_class].keys()):
+                    # get class instances from token (use rsplit to handle underscores in instance names)
+                    instance1, instance2 = token.rsplit("_", 1)
 
-                    cell_type_idx = self.classes2idx["cell_line"][cell_type]
-                    cytokine_idx = self.classes2idx["gene"][cytokine]
-                    self.joint_idx_2_classes[str(cell_type_idx) + "_" + str(cytokine_idx)] = token
+                    class1_idx = self.classes2idx[class1][instance1]
+                    class2_idx = self.classes2idx[class2][instance2]
+                    self.joint_idx_2_classes[str(class1_idx) + "_" + str(class2_idx)] = token
 
             if self.sd_size_factor is not None:
                 sd_size_factor_dict = pickle.load(open(self.sd_size_factor, "rb"))
                 self.sd_size_factor = {}
-                self.sd_size_factor["cell_type_cytokine"] = sd_size_factor_dict["cell_type_cytokine"]
+                self.sd_size_factor[joint_class] = sd_size_factor_dict[joint_class]
 
             # handle idx mapping later during generation time
         # Remove adata reference as it's no longer needed after initialization

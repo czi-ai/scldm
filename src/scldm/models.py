@@ -817,8 +817,8 @@ class LatentDiffusion(BaseModel):
         counts = batch[ModelEnum.COUNTS.value]
         genes = batch[ModelEnum.GENES.value]
         library_size = batch[ModelEnum.LIBRARY_SIZE.value]
-        counts_subset = batch[ModelEnum.COUNTS_SUBSET.value]
-        genes_subset = batch[ModelEnum.GENES_SUBSET.value]
+        counts_subset = batch.get(ModelEnum.COUNTS_SUBSET.value)
+        genes_subset = batch.get(ModelEnum.GENES_SUBSET.value)
 
         mu, theta, z = self.vae_model.forward(
             counts=counts,
@@ -827,8 +827,11 @@ class LatentDiffusion(BaseModel):
             counts_subset=counts_subset,
             genes_subset=genes_subset,
         )
+        counts_pred = NegativeBinomialSCVI(mu=mu, theta=theta).sample()
         output: dict[str, torch.Tensor] = {
-            "z_mean_flat": z.flatten(start_dim=1),
+            "reconstructed_counts": counts_pred.cpu(),
+            "z": z.cpu(),
+            "z_mean_flat": z.flatten(start_dim=1).cpu(),
         }
         return output
 

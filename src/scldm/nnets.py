@@ -275,8 +275,11 @@ class DiT(nn.Module):
         x: torch.Tensor,
         t: torch.Tensor,
         condition: dict[str, torch.Tensor],
-        force_drop_ids: bool = True,
+        force_drop_ids: bool | None = None,
     ) -> torch.Tensor:
+        # Default: apply dropout during training, not during eval
+        if force_drop_ids is None:
+            force_drop_ids = self.training
         t_embedding = self.t_embedder(t).unsqueeze(1)
 
         condition_embedding: torch.Tensor = self._get_condition_embedding(condition, force_drop_ids)
@@ -358,11 +361,19 @@ class DiT(nn.Module):
         if condition is not None and cfg_scale is not None:
             x_half, t_half = x[len_half:], t[len_half:]
 
-            for class_name, scale in cfg_scale.items():
-                # Build per-class condition dict for the second half only
-                single_condition_half = {class_name: condition[class_name][len_half:]}
-                cond_pred_half = self.forward(x_half, t_half, single_condition_half, force_drop_ids=False)
-                cond_out_half += scale * (cond_pred_half - _cond_out_half)
+            if self.condition_strategy == "joint":
+                # For joint condition strategy, pass all conditions together and use average scale
+                full_condition_half = {k: v[len_half:] for k, v in condition.items()}
+                cond_pred_half = self.forward(x_half, t_half, full_condition_half, force_drop_ids=False)
+                avg_scale = sum(cfg_scale.values()) / len(cfg_scale)
+                cond_out_half += avg_scale * (cond_pred_half - _cond_out_half)
+            else:
+                # For mutually_exclusive strategy, iterate per-class
+                for class_name, scale in cfg_scale.items():
+                    # Build per-class condition dict for the second half only
+                    single_condition_half = {class_name: condition[class_name][len_half:]}
+                    cond_pred_half = self.forward(x_half, t_half, single_condition_half, force_drop_ids=False)
+                    cond_out_half += scale * (cond_pred_half - _cond_out_half)
 
         return torch.cat([uncond_out_half, cond_out_half], dim=0)
 
