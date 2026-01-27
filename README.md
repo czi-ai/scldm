@@ -49,20 +49,38 @@ pip install "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git
 uv pip install "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 ```
 
+### Environment setup (required before `uv run`)
+
+`uv run` assumes you already have an environment with dependencies installed. Because
+`cellarium-ml` must be installed from source, set up the environment first:
+
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -e . "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
+```
+
+If you prefer, you can use `pip` in an existing environment instead of `uv pip`.
+
 ## Checkpoints and other artifacts
 
 To download model checkpoints and other required artifacts:
 
 ```bash
-scldm-download-artifacts
-# or
-uv run scldm-download-artifacts
+scldm-download-artifacts --group resubmission
+# or (after environment setup)
+uv run scldm-download-artifacts --group resubmission
 ```
 
-This will automatically download all artifacts to the `_artifacts` subdirectory. You
-can change this with the `--destination` flag. If you don't want to download all
-files, you can specify `--group datasets`, `--group vae_census`, `--group fm_observational`, and/or
-`--group fm_perturbation` to download just those artifacts.
+Downloads come from the public `s3://czi-scldm` bucket using unsigned requests by
+default. Files are placed under the `scldm/_artifacts` directory unless you override
+`--destination`.
+
+We recommend downloading only `--group resubmission`, since it includes the primary
+checkpoints and configs. The `vae_census` artifacts are separate and unchanged, so only
+download `--group vae_census` if you need those. The `datasets` group contains the
+`dentategyrus` train/test AnnData files. You can pass `--group` multiple times or use
+comma-separated values (use `all` to fetch everything).
 
 ## Dataset files (AnnData) and metadata
 
@@ -90,7 +108,7 @@ The JSON files under `metadata/` are required to define perturbation splits for 
 ### 1. VAE Training
 
 ```bash
-# Using uv run (automatically manages dependencies)
+# Using uv run (after environment setup above)
 uv run python experiments/scripts/train.py \
   paths.base_data_path=/path/to/your/data \
   experiment_name=my_vae_experiment \
@@ -118,7 +136,7 @@ Checkpoints saved to: `experiments/checkpoints/{experiment_name}/`
 Requires a trained VAE checkpoint first.
 
 ```bash
-# Using uv run (automatically manages dependencies)
+# Using uv run (after environment setup above)
 uv run python experiments/scripts/train_ldm.py \
   paths.base_data_path=/path/to/your/data \
   experiment_name=my_ldm_experiment \
@@ -142,7 +160,7 @@ Key config overrides:
 ## Inference / Sampling
 
 ```bash
-# Using uv run (automatically manages dependencies)
+# Using uv run (after environment setup above)
 uv run python experiments/scripts/inference.py \
   ckpt_file=/path/to/ldm/checkpoint.ckpt \
   config_file=/path/to/ldm/config.yaml \
