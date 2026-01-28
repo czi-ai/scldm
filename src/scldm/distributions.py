@@ -40,3 +40,23 @@ def log_nb_positive(
     )
 
     return res
+
+
+def log_gaussian(
+    x: torch.Tensor,
+    mu: torch.Tensor,
+    sigma: torch.Tensor | None = None,
+    eps: float = 1e-8,
+    log_fn: Callable[[torch.Tensor], torch.Tensor] = torch.log,
+) -> torch.Tensor:
+    """Gaussian-style reconstruction loss helper.
+
+    - If ``sigma`` is provided: returns a Gaussian negative log-likelihood term
+      (up to an additive constant) under Normal(mu, sigma).
+    - If ``sigma`` is ``None``: returns an elementwise L2 loss (x - mu)^2.
+    """
+    if sigma is None:
+        return (x - mu) ** 2
+
+    sigma = sigma + eps
+    return 0.5 * torch.pow((x - mu) / sigma, 2) + log_fn(sigma)

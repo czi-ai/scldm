@@ -78,19 +78,8 @@ decoder_head:
     n_embed: ${model.module.vae_model.encoder.n_embed}
     norm_layer: ${model.module.vae_model.encoder.norm_layer}
     layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
-  discretized_gaussian:
-    _target_: scldm.stochastic_layers.TruncatedDiscretizedGaussianTransformerLayer
-    n_embed: ${model.module.vae_model.encoder.n_embed}
-    norm_layer: ${model.module.vae_model.encoder.norm_layer}
-    layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
-  discretized_logistic:
-    _target_: scldm.stochastic_layers.TruncatedDiscretizedLogisticTransformerLayer
-    n_embed: ${model.module.vae_model.encoder.n_embed}
-    norm_layer: ${model.module.vae_model.encoder.norm_layer}
-    layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
-  poisson:
-    _target_: scldm.stochastic_layers.PossionTransformerLayer
-    n_genes: ${datamodule.vocabulary_encoder.n_genes}
+  gaussian:
+    _target_: scldm.stochastic_layers.GaussianTransformerLayer
     n_embed: ${model.module.vae_model.encoder.n_embed}
     norm_layer: ${model.module.vae_model.encoder.norm_layer}
     layernorm_eps: ${model.module.vae_model.encoder.layernorm_eps}
