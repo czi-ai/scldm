@@ -55,8 +55,9 @@ optional-dependencies.dev = [
   "twine>=4.0.2",
 ]
 optional-dependencies.docs = [
-  "docutils>=0.8,!=0.18.*,!=0.19.*",
-  "hatch",                           # so we can use the tool.hatch.envs.docs.scripts commands
+  # sphinx-tabs expects docutils backrefs; pin until compatible
+  "docutils==0.21.2",
+  "hatch",            # so we can use the tool.hatch.envs.docs.scripts commands
   "ipykernel",
   "ipython",
   "myst-nb>=1.1",
@@ -67,7 +68,7 @@ optional-dependencies.docs = [
   "sphinx-autodoc-typehints",
   "sphinx-book-theme>=1",
   "sphinx-copybutton",
-  "sphinx-tabs",
+  "sphinx-tabs==3.4.7",
   "sphinxcontrib-bibtex>=1",
   "sphinxext-opengraph",
 ]

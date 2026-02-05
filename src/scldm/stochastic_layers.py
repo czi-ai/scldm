@@ -4,10 +4,37 @@ import torch.nn as nn
 from scvi.distributions import NegativeBinomial as NegativeBinomialSCVI
 from torch.distributions import Distribution
 
+from scldm.layers import NORM_LAYERS
+
 
 ###########################
 #     GAUSSIAN LAYERS     #
 ###########################
+class GaussianTransformerLayer(nn.Module):
+    def __init__(
+        self,
+        *,
+        n_embed: int | None = None,
+        norm_layer: str = "layernorm",
+        layernorm_eps: float = 1e-8,
+    ):
+        super().__init__()
+        if n_embed is None:
+            raise ValueError("GaussianTransformerLayer requires n_embed (got None)")
+        self.ln = NORM_LAYERS[norm_layer](n_embed, eps=layernorm_eps)
+        self.params = nn.Linear(n_embed, 1, bias=True)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        genes: torch.Tensor | None = None,
+        library_size: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        x = self.ln(x)
+        mu = self.params(x)
+        return mu.squeeze(-1)
+
+
 class GaussianLinearLayer(nn.Module):
     def __init__(
         self,

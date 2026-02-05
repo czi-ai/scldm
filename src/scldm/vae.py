@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from scvi.distributions import NegativeBinomial as NegativeBinomialSCVI
-from torch.distributions import Distribution
+from torch.distributions import Distribution, Normal
 
 from scldm.layers import InputTransformerVAE
 from scldm.nnets import Decoder, DecoderScvi, Encoder, EncoderScvi
@@ -33,7 +33,7 @@ class TransformerVAE(nn.Module):
         library_size: torch.Tensor,
         counts_subset: torch.Tensor | None = None,
         genes_subset: torch.Tensor | None = None,
-    ) -> tuple[Distribution, torch.Tensor]:
+    ) -> tuple[dict[str, torch.Tensor], torch.Tensor]:
         genes_counts_embedding = self.input_layer(
             counts_subset,
             genes_subset,
@@ -43,8 +43,17 @@ class TransformerVAE(nn.Module):
             genes if isinstance(self.decoder.gene_embedding, nn.Embedding) else self.input_layer.gene_embedding(genes)
         )  # B, S, E
         h_x = self.decoder(h_z, genes_for_decoder)  # B, S, E
-        mu, theta = self.decoder_head(h_x, genes, library_size)  # B, S, 1
-        return mu, theta, h_z
+        head_name = self.decoder_head.__class__.__name__
+        if head_name == "GaussianTransformerLayer":
+            mu = self.decoder_head(h_x, genes, library_size)
+            params = {"mu": mu}
+        else:
+            out = self.decoder_head(h_x, genes, library_size)
+            if isinstance(out, tuple) and len(out) == 2:
+                params = {"mu": out[0], "theta": out[1]}
+            else:
+                raise ValueError(f"Unsupported decoder_head output for {head_name}: {type(out)}")
+        return params, h_z
 
     def encode(
         self,
@@ -70,6 +79,10 @@ class TransformerVAE(nn.Module):
             genes if isinstance(self.decoder.gene_embedding, nn.Embedding) else self.input_layer.gene_embedding(genes)
         )
         h_x = self.decoder(z, genes_for_decoder, condition)
+        head_name = self.decoder_head.__class__.__name__
+        if head_name == "GaussianTransformerLayer":
+            mu = self.decoder_head(h_x, genes, library_size)
+            return Normal(mu, torch.ones_like(mu))
         mu, theta = self.decoder_head(h_x, genes, library_size)
         return NegativeBinomialSCVI(mu=mu, theta=theta)
 

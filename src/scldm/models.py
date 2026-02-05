@@ -15,7 +15,7 @@ from torch.utils._pytree import tree_map
 from torchmetrics.functional.regression import mean_squared_error, pearson_corrcoef, r2_score
 
 from scldm.constants import LossEnum, ModelEnum
-from scldm.distributions import log_nb_positive
+from scldm.distributions import log_gaussian, log_nb_positive
 from scldm.evaluations import (
     BrayCurtisKernel,
     MMDLoss,
@@ -224,7 +224,7 @@ class VAE(BaseModel):
         library_size: torch.Tensor,
         counts_subset: torch.Tensor | None = None,
         genes_subset: torch.Tensor | None = None,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[dict[str, torch.Tensor], torch.Tensor]:
         if hasattr(self, "vae_model_compiled"):
             return self.vae_model_compiled(counts, genes, library_size, counts_subset, genes_subset)
         else:
@@ -233,10 +233,14 @@ class VAE(BaseModel):
     def loss(
         self,
         counts: torch.Tensor,
-        mu: torch.Tensor,
-        theta: torch.Tensor,
+        params: dict[str, torch.Tensor],
     ) -> dict[str, Any]:
-        recon_loss = -log_nb_positive(counts, mu, theta)
+        head_name = self.vae_model.decoder_head.__class__.__name__
+        if head_name == "GaussianTransformerLayer":
+            y = torch.log1p((counts / counts.sum(dim=1, keepdim=True)) * 10_000)
+            recon_loss = log_gaussian(y, params["mu"])
+        else:
+            recon_loss = -log_nb_positive(counts, params["mu"], params["theta"])
         output = {
             LossEnum.LLH_LOSS.value: recon_loss.sum(dim=1).mean(),
         }
@@ -248,7 +252,7 @@ class VAE(BaseModel):
         genes_subset = batch.get(ModelEnum.GENES_SUBSET.value, None)
         library_size = batch[ModelEnum.LIBRARY_SIZE.value]
 
-        mu, theta, _ = self.forward(
+        params, _ = self.forward(
             counts=counts,
             genes=genes,
             library_size=library_size,
@@ -258,11 +262,11 @@ class VAE(BaseModel):
 
         loss_output = self.loss(
             counts=counts,
-            mu=mu,
-            theta=theta,
+            params=params,
         )
 
-        self.log("train_theta", theta.mean(), on_step=True, on_epoch=True, sync_dist=True)
+        if "theta" in params:
+            self.log("train_theta", params["theta"].mean(), on_step=True, on_epoch=True, sync_dist=True)
 
         loss = sum(loss_output.values())
         self.log("train_loss", loss, prog_bar=False, on_step=True, on_epoch=True, sync_dist=True)
@@ -289,7 +293,7 @@ class VAE(BaseModel):
         genes_subset = batch.get(ModelEnum.GENES_SUBSET.value, None)
         library_size = batch[ModelEnum.LIBRARY_SIZE.value]
 
-        mu, theta, _ = self.vae_model(
+        params, _ = self.vae_model(
             counts,
             genes,
             library_size,
@@ -299,8 +303,7 @@ class VAE(BaseModel):
 
         loss_output = self.loss(
             counts=counts,
-            mu=mu,
-            theta=theta,
+            params=params,
         )
 
         loss = sum(loss_output.values())
@@ -309,9 +312,13 @@ class VAE(BaseModel):
         for k, v in loss_output.items():
             metrics[f"{stage}_{k}"] = v
 
-        counts_pred = NegativeBinomialSCVI(mu=mu, theta=theta).sample()
-
-        counts_pred_scaled = torch.log1p((counts_pred / counts_pred.sum(dim=1, keepdim=True)) * 10_000)
+        head_name = self.vae_model.decoder_head.__class__.__name__
+        if head_name == "GaussianTransformerLayer":
+            counts_pred = params["mu"]
+            counts_pred_scaled = counts_pred
+        else:
+            counts_pred = NegativeBinomialSCVI(mu=params["mu"], theta=params["theta"]).sample()
+            counts_pred_scaled = torch.log1p((counts_pred / counts_pred.sum(dim=1, keepdim=True)) * 10_000)
         counts_true_scaled = torch.log1p((counts / counts.sum(dim=1, keepdim=True)) * 10_000)
 
         counts_pred_zeros = (counts_pred == 0).float()
@@ -353,14 +360,18 @@ class VAE(BaseModel):
 
         # encode_kwargs = {str(k): v for k, v in self.inference_args.items()} if self.inference_args else {}
 
-        mu, theta, z = self.forward(
+        params, z = self.forward(
             counts=batch[ModelEnum.COUNTS.value],
             genes=batch[ModelEnum.GENES.value],
             library_size=batch[ModelEnum.LIBRARY_SIZE.value],
             counts_subset=batch.get(ModelEnum.COUNTS_SUBSET.value),
             genes_subset=batch.get(ModelEnum.GENES_SUBSET.value),
         )
-        counts_pred = NegativeBinomialSCVI(mu=mu, theta=theta).sample()
+        head_name = self.vae_model.decoder_head.__class__.__name__
+        if head_name == "GaussianTransformerLayer":
+            counts_pred = params["mu"]
+        else:
+            counts_pred = NegativeBinomialSCVI(mu=params["mu"], theta=params["theta"]).sample()
         inference_outputs: dict[str, torch.Tensor] = {
             "reconstructed_counts": counts_pred.cpu(),
             "z": z.cpu(),
