@@ -1,4 +1,5 @@
-from typing import Literal
+from pathlib import Path
+from typing import Any, Literal
 
 import torch
 import torch.nn as nn
@@ -231,11 +232,13 @@ class DiT(nn.Module):
         class_vocab_sizes: dict[str, int],
         cfg_dropout_prob: float = 0.1,
         condition_strategy: Literal["mutually_exclusive", "joint"] = "mutually_exclusive",
+        pretrained_class_embeddings: dict[str, Any] | None = None,
     ):
         super().__init__()
         self.class_vocab_sizes = class_vocab_sizes
         self.cfg_dropout_prob = cfg_dropout_prob
         self.condition_strategy = condition_strategy
+        self.pretrained_class_embeddings = pretrained_class_embeddings or {}
         self.class_embeddings = nn.ModuleDict()
         for class_name, vocab_size in class_vocab_sizes.items():
             use_cfg_embedding = int(cfg_dropout_prob > 0)
@@ -269,6 +272,118 @@ class DiT(nn.Module):
 
         # Initialize weights (timestep MLP, pos_embed, class embeddings, adaLN layers, output layer)
         self.initialize_weights()
+
+    def load_pretrained_class_embeddings_from_config(
+        self, classes2idx: dict[str, dict[str, int]] | None = None
+    ) -> None:
+        config = self.pretrained_class_embeddings or {}
+        ckpt_path = config.get("ckpt_path")
+        if not ckpt_path:
+            return
+        self._load_pretrained_class_embeddings(
+            ckpt_path=ckpt_path,
+            classes2idx=classes2idx,
+            strict=config.get("strict", True),
+            freeze=config.get("freeze", False),
+            labels_key=config.get("labels_key", "labels"),
+            state_dict_key=config.get("state_dict_key", "state_dict"),
+            state_dict_key_prefix=config.get("state_dict_key_prefix", "class_embeddings."),
+        )
+
+    def _load_pretrained_class_embeddings(
+        self,
+        ckpt_path: str | Path,
+        classes2idx: dict[str, dict[str, int]] | None,
+        strict: bool,
+        freeze: bool,
+        labels_key: str,
+        state_dict_key: str,
+        state_dict_key_prefix: str,
+    ) -> None:
+        ckpt_path = Path(ckpt_path)
+        if not ckpt_path.exists():
+            raise FileNotFoundError(f"Pretrained embeddings file not found: {ckpt_path}")
+
+        payload = torch.load(ckpt_path, map_location="cpu")
+        if not isinstance(payload, dict):
+            raise ValueError("Pretrained embeddings payload must be a dict.")
+
+        labels_map = payload.get(labels_key)
+        if strict and labels_map is None:
+            raise ValueError(f"Missing labels map '{labels_key}' in pretrained embeddings payload.")
+
+        if state_dict_key in payload:
+            state_dict = payload[state_dict_key]
+        else:
+            state_dict = payload
+
+        if not isinstance(state_dict, dict):
+            raise ValueError("Pretrained embeddings state_dict must be a dict.")
+
+        use_cfg_embedding = int(self.cfg_dropout_prob > 0)
+        for class_name, vocab_size in self.class_vocab_sizes.items():
+            weight_key = self._resolve_embedding_key(state_dict, class_name, state_dict_key_prefix)
+            weight = state_dict[weight_key]
+            if not isinstance(weight, torch.Tensor):
+                raise ValueError(f"Embedding weight for '{class_name}' is not a tensor.")
+
+            expected_shape = (vocab_size + use_cfg_embedding, self.n_embed)
+            if tuple(weight.shape) != expected_shape:
+                raise ValueError(
+                    f"Embedding shape mismatch for '{class_name}': expected {expected_shape}, got {tuple(weight.shape)}"
+                )
+
+            if strict:
+                if classes2idx is None:
+                    raise ValueError("classes2idx mapping is required for strict pretrained embedding validation.")
+                if class_name not in classes2idx:
+                    raise ValueError(f"classes2idx missing class '{class_name}' for pretrained embedding validation.")
+                if labels_map is None or class_name not in labels_map:
+                    raise ValueError(f"labels map missing class '{class_name}' for pretrained embedding validation.")
+                expected_labels = self._labels_from_classes2idx(classes2idx[class_name], vocab_size, class_name)
+                loaded_labels = [str(label) for label in labels_map[class_name]]
+                if loaded_labels != expected_labels:
+                    raise ValueError(
+                        f"Label order mismatch for '{class_name}'. Expected {expected_labels}, got {loaded_labels}"
+                    )
+
+            embedding = self.class_embeddings[class_name]
+            embedding.weight.data.copy_(weight.to(embedding.weight.device))
+            if freeze:
+                embedding.weight.requires_grad = False
+
+    @staticmethod
+    def _labels_from_classes2idx(
+        class_map: dict[str, int], vocab_size: int, class_name: str
+    ) -> list[str]:
+        labels_by_index: list[str | None] = [None] * vocab_size
+        for label, idx in class_map.items():
+            if idx < 0 or idx >= vocab_size:
+                raise ValueError(f"Label index out of range for '{class_name}': {label} -> {idx}")
+            if labels_by_index[idx] is not None:
+                raise ValueError(f"Duplicate label index for '{class_name}': {label} -> {idx}")
+            labels_by_index[idx] = str(label)
+        if any(label is None for label in labels_by_index):
+            raise ValueError(f"Incomplete label mapping for '{class_name}'.")
+        return [label for label in labels_by_index if label is not None]
+
+    @staticmethod
+    def _resolve_embedding_key(
+        state_dict: dict[str, torch.Tensor], class_name: str, prefix: str
+    ) -> str:
+        direct_key = f"{prefix}{class_name}.weight"
+        if direct_key in state_dict:
+            return direct_key
+
+        suffix = f"class_embeddings.{class_name}.weight"
+        candidates = [key for key in state_dict.keys() if key.endswith(suffix)]
+        if len(candidates) == 1:
+            return candidates[0]
+        if len(candidates) > 1:
+            raise ValueError(
+                f"Multiple matching keys for '{class_name}' found: {candidates}. Set state_dict_key_prefix."
+            )
+        raise ValueError(f"Missing embedding weight for '{class_name}' in pretrained state_dict.")
 
     def forward(
         self,

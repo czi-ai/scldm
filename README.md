@@ -184,6 +184,33 @@ Key config overrides:
 
 Output: AnnData file saved to `{inference_path}/{dataset}_generated_{idx}.h5ad`
 
+## Pretrained class embeddings (DiT)
+
+To load pretrained conditional class embeddings for the diffusion model, provide a `.pt`
+file containing a `state_dict` and `labels` mapping. The `labels` list must be ordered
+by the embedding index and will be strictly validated against the label encoder.
+
+Minimal payload format:
+
+```python
+payload = {
+    "state_dict": {
+        "class_embeddings.cell_type.weight": weight,  # shape: [num_classes + cfg, n_embed]
+    },
+    "labels": {
+        "cell_type": ["B", "T"],  # ordered by index
+    },
+}
+torch.save(payload, "class_embeds.pt")
+```
+
+Example Hydra override:
+
+```bash
+model.module.diffusion_model.pretrained_class_embeddings.ckpt_path=/path/to/class_embeds.pt \
+model.module.diffusion_model.pretrained_class_embeddings.freeze=true
+```
+
 ## Release notes
 
 See the [changelog][].

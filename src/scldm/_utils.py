@@ -2,7 +2,7 @@ import json
 import math
 import pickle
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Sequence
 
 import anndata as ad
 import hydra
@@ -14,6 +14,133 @@ from scipy import sparse
 
 from scldm.constants import ModelEnum
 from scldm.logger import logger
+
+
+def _iter_adatas(adata_or_paths: ad.AnnData | str | Path | Sequence[str | Path]) -> Iterable[ad.AnnData]:
+    if isinstance(adata_or_paths, ad.AnnData):
+        yield adata_or_paths
+        return
+    if isinstance(adata_or_paths, (str, Path)):
+        yield ad.read_h5ad(adata_or_paths)
+        return
+    if isinstance(adata_or_paths, Sequence):
+        for path in adata_or_paths:
+            yield ad.read_h5ad(path)
+        return
+    raise TypeError("adata_or_paths must be AnnData, a path, or a sequence of paths")
+
+
+def _compute_log_library_sizes(adata: ad.AnnData) -> np.ndarray:
+    counts = adata.X
+    if sparse.issparse(counts):
+        library_sizes = np.asarray(counts.sum(axis=1)).reshape(-1)
+    else:
+        library_sizes = np.asarray(counts.sum(axis=1)).reshape(-1)
+    return np.log(library_sizes)
+
+
+def _accumulate_group_stats(
+    stats_acc: dict[str, list[float]],
+    keys: np.ndarray,
+    values: np.ndarray,
+) -> None:
+    df = pd.DataFrame({"key": keys, "log_ls": values})
+    grouped = df.groupby("key")["log_ls"]
+    counts = grouped.count()
+    sums = grouped.sum()
+    sumsq = grouped.apply(lambda s: np.square(s).sum())
+    for key in counts.index:
+        count = float(counts.loc[key])
+        sum_val = float(sums.loc[key])
+        sumsq_val = float(sumsq.loc[key])
+        if key not in stats_acc:
+            stats_acc[key] = [0.0, 0.0, 0.0]
+        stats_acc[key][0] += count
+        stats_acc[key][1] += sum_val
+        stats_acc[key][2] += sumsq_val
+
+
+def _finalize_stats(stats_acc: dict[str, list[float]]) -> dict[str, float]:
+    stats: dict[str, float] = {}
+    for key, (count, sum_val, sumsq_val) in stats_acc.items():
+        if count <= 0:
+            continue
+        mean_val = sum_val / count
+        stats[key] = float(mean_val)
+    return stats
+
+
+def _finalize_std(stats_acc: dict[str, list[float]]) -> dict[str, float]:
+    stats: dict[str, float] = {}
+    for key, (count, sum_val, sumsq_val) in stats_acc.items():
+        if count <= 0:
+            continue
+        mean_val = sum_val / count
+        var_val = max((sumsq_val / count) - (mean_val**2), 0.0)
+        stats[key] = float(np.sqrt(var_val))
+    return stats
+
+
+def compute_log_size_factor_stats(
+    adata_or_paths: ad.AnnData | str | Path | Sequence[str | Path],
+    class_keys: Sequence[str],
+) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, float]]]:
+    """Compute log size factor mean/std per class or class-pair from AnnData."""
+    if len(class_keys) not in (1, 2):
+        raise ValueError("class_keys must contain 1 or 2 columns")
+
+    class_keys = list(class_keys)
+    unique_class1: set[str] = set()
+    unique_class2: set[str] = set()
+    acc_class1: dict[str, list[float]] = {}
+    acc_combo: dict[str, list[float]] = {}
+
+    for adata in _iter_adatas(adata_or_paths):
+        for key in class_keys:
+            if key not in adata.obs:
+                raise ValueError(f"'{key}' column not found in adata.obs")
+
+        log_library_sizes = _compute_log_library_sizes(adata)
+        class1_vals = adata.obs[class_keys[0]].astype(str).to_numpy()
+        unique_class1.update(np.unique(class1_vals).tolist())
+        _accumulate_group_stats(acc_class1, class1_vals, log_library_sizes)
+
+        if len(class_keys) == 2:
+            class2_vals = adata.obs[class_keys[1]].astype(str).to_numpy()
+            unique_class2.update(np.unique(class2_vals).tolist())
+            combo_vals = (class1_vals + "_" + class2_vals).astype(str)
+            _accumulate_group_stats(acc_combo, combo_vals, log_library_sizes)
+
+    mu_stats: dict[str, dict[str, float]] = {}
+    sd_stats: dict[str, dict[str, float]] = {}
+
+    if len(class_keys) == 1:
+        label = class_keys[0]
+        mu_stats[label] = _finalize_stats(acc_class1)
+        sd_stats[label] = _finalize_std(acc_class1)
+        return mu_stats, sd_stats
+
+    joint_key = "_".join(class_keys)
+    mu_class1 = _finalize_stats(acc_class1)
+    sd_class1 = _finalize_std(acc_class1)
+    mu_combo = _finalize_stats(acc_combo)
+    sd_combo = _finalize_std(acc_combo)
+
+    mu_stats[joint_key] = {}
+    sd_stats[joint_key] = {}
+    for class1 in sorted(unique_class1):
+        if class1 not in mu_class1 or class1 not in sd_class1:
+            raise ValueError(f"Missing size-factor stats for primary class '{class1}'")
+        for class2 in sorted(unique_class2):
+            combo_key = f"{class1}_{class2}"
+            if combo_key in mu_combo and combo_key in sd_combo:
+                mu_stats[joint_key][combo_key] = mu_combo[combo_key]
+                sd_stats[joint_key][combo_key] = sd_combo[combo_key]
+            else:
+                mu_stats[joint_key][combo_key] = mu_class1[class1]
+                sd_stats[joint_key][combo_key] = sd_class1[class1]
+
+    return mu_stats, sd_stats
 
 
 def wsd_schedule(
@@ -140,10 +267,10 @@ def get_tissue_adata_files(base_path: Path, split: str = "train") -> tuple[list[
                 if h5ad_files:
                     all_files.extend(h5ad_files[:-1])
 
-    shard_size = set(shard_size)
-    assert len(shard_size) == 1, "shard_size mismatch"
+    shard_size_set = set(shard_size)
+    assert len(shard_size_set) == 1, "shard_size mismatch"
 
-    return sorted(all_files), total_cells, shard_size.pop()
+    return sorted(all_files), total_cells, shard_size_set.pop()
 
 
 def remap_config(cfg):

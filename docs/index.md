@@ -36,6 +36,7 @@ scLDM is a deep learning framework for modeling single-cell gene expression usin
 api.md
 changelog.md
 contributing.md
+pretrained_embeddings.md
 references.md
 
 notebooks/generation

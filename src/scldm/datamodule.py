@@ -28,7 +28,7 @@ except ImportError as e:
 from torch.utils._pytree import tree_map
 from torch.utils.data import DataLoader
 
-from scldm._utils import get_tissue_adata_files, sort_h5ad_files
+from scldm._utils import compute_log_size_factor_stats, get_tissue_adata_files, sort_h5ad_files
 from scldm.constants import ModelEnum
 from scldm.encoder import VocabularyEncoderSimplified
 from scldm.logger import logger
@@ -373,6 +373,17 @@ class DataModule(LightningDataModule):
                     indices_strict=False,
                     max_cache_size=10,
                 )
+
+        if self.vocabulary_encoder.mu_size_factor is None and self.vocabulary_encoder.sd_size_factor is None:
+            class_keys = list(self.vocabulary_encoder.class_vocab_sizes.keys())
+            if len(class_keys) not in (1, 2):
+                raise ValueError("Auto size-factor computation supports only 1 or 2 class columns")
+            logger.info(f"Computing size-factor stats from training data using: {class_keys}")
+            if self.train_metadata is None:
+                mu_stats, sd_stats = compute_log_size_factor_stats(self.train_adata, class_keys)
+            else:
+                mu_stats, sd_stats = compute_log_size_factor_stats(self.train_files, class_keys)
+            self.vocabulary_encoder.set_size_factor_stats(mu_stats, sd_stats)
 
         labels = {}
         if self.vocabulary_encoder.labels is not None and isinstance(self.vocabulary_encoder.labels, dict):

@@ -3,7 +3,7 @@ import pickle
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import anndata as ad
 import numpy as np
@@ -20,8 +20,8 @@ class VocabularyEncoderSimplified:
     mask_token_idx: int = 0
     n_genes: int | None = None
     guidance_weight: dict[str, float] | None = None
-    mu_size_factor: Path | str | None = None
-    sd_size_factor: Path | str | None = None
+    mu_size_factor: Path | str | None | dict[str, dict[Any, float]] = None
+    sd_size_factor: Path | str | None | dict[str, dict[Any, float]] = None
     condition_strategy: Literal["mutually_exclusive", "joint"] = "mutually_exclusive"
     metadata_genes: Path | str | None = None
     metadata_json: Path | str | None = None
@@ -156,3 +156,38 @@ class VocabularyEncoderSimplified:
 
     def decode_metadata(self, indices: Sequence[int], label: str) -> np.ndarray:
         return np.array([self.idx2classes[label].get(item, None) for item in indices])
+
+    def set_size_factor_stats(
+        self,
+        mu_stats: dict[str, dict[str, float]],
+        sd_stats: dict[str, dict[str, float]],
+    ) -> None:
+        """Set size factor stats computed from training data."""
+        if self.condition_strategy != "joint":
+            self.mu_size_factor = {}
+            self.sd_size_factor = {}
+            for label in self.class_vocab_sizes.keys():
+                if label not in mu_stats or label not in sd_stats:
+                    raise ValueError(f"Missing size factor stats for label '{label}'")
+                self.mu_size_factor[label] = {
+                    self.classes2idx[label][k]: v for k, v in mu_stats[label].items()
+                }
+                self.sd_size_factor[label] = {
+                    self.classes2idx[label][k]: v for k, v in sd_stats[label].items()
+                }
+            return
+
+        joint_class = "_".join(self.class_vocab_sizes.keys())
+        if joint_class not in mu_stats or joint_class not in sd_stats:
+            raise ValueError(f"Missing size factor stats for joint key '{joint_class}'")
+        self.joint_key = joint_class
+        self.joint_components = list(self.class_vocab_sizes.keys())
+        self.mu_size_factor = {joint_class: mu_stats[joint_class]}
+        self.sd_size_factor = {joint_class: sd_stats[joint_class]}
+        self.joint_idx_2_classes = {}
+        class1, class2 = self.class_vocab_sizes.keys()
+        for token in mu_stats[joint_class].keys():
+            instance1, instance2 = token.rsplit("_", 1)
+            class1_idx = self.classes2idx[class1][instance1]
+            class2_idx = self.classes2idx[class2][instance2]
+            self.joint_idx_2_classes[str(class1_idx) + "_" + str(class2_idx)] = token

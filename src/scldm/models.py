@@ -197,6 +197,14 @@ class VAE(BaseModel):
         self.inference_args = inference_args
 
     def on_fit_start(self) -> None:
+        pretrained_config = getattr(self.diffusion_model, "pretrained_class_embeddings", None)
+        if pretrained_config:
+            vocab_encoder = None
+            if self.trainer is not None and getattr(self.trainer, "datamodule", None) is not None:
+                vocab_encoder = getattr(self.trainer.datamodule, "vocabulary_encoder", None)
+            classes2idx = getattr(vocab_encoder, "classes2idx", None) if vocab_encoder is not None else None
+            self.diffusion_model.load_pretrained_class_embeddings_from_config(classes2idx=classes2idx)
+
         if self.model_is_compiled:
             logger.info(f"Compiling model with {self.compile_mode} mode.")
             self.vae_model_compiled = torch.compile(
