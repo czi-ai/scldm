@@ -48,7 +48,7 @@ dependencies = [
   # `cellarium-ml<=0.0.7` is not compatible with `anndata>=0.10.9` and there is no newer PyPI release
   # Once `cellarium-ml>0.0.7` is available on PyPI, replace the below with: "cellarium-ml>0.0.7"
   # Until then, this must be manually installed since PyPI does not allow direct references to dependencies
-  #"cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git",
+  # "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git",
 ]
 optional-dependencies.dev = [
   "pre-commit",
@@ -57,7 +57,7 @@ optional-dependencies.dev = [
 optional-dependencies.docs = [
   # sphinx-tabs expects docutils backrefs; pin until compatible
   "docutils==0.21.2",
-  "hatch",            # so we can use the tool.hatch.envs.docs.scripts commands
+  "hatch",                    # so we can use the tool.hatch.envs.docs.scripts commands
   "ipykernel",
   "ipython",
   "myst-nb>=1.1",
@@ -76,73 +76,52 @@ optional-dependencies.test = [
   "coverage>=7.10",
   "pytest",
 ]
-
 urls.Documentation = "https://czi-ai.github.io/scldm"
 urls.Homepage = "https://github.com/czi-ai/scldm"
 urls.Source = "https://github.com/czi-ai/scldm"
 scripts.scldm-download-artifacts = "scldm.download_artifacts:main"
 
-[tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "src/scldm/_version.py"
-
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.envs.default]
-installer = "uv"
-features = [ "dev" ]
-
-[tool.hatch.envs.docs]
-installer = "uv"
-features = [ "docs" ]
-scripts.build = "sphinx-build -M html docs docs/_build -W {args}"
-scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
-scripts.clean = "git clean -fdX -- {args:docs}"
-extra-dependencies = [
+[tool.hatch]
+build.hooks.vcs.version-file = "src/scldm/_version.py"
+build.targets.sdist.packages = [
+  "src/scldm",
+]  # this is needed to avoid packaging the entire repo in the sdist
+build.targets.wheel.packages = [ "src/scldm" ]
+envs.default.installer = "uv"
+envs.default.features = [ "dev" ]
+envs.docs.installer = "uv"
+envs.docs.features = [ "docs" ]
+envs.docs.scripts.build = "sphinx-build -M html docs docs/_build -W {args}"
+envs.docs.scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
+envs.docs.scripts.clean = "git clean -fdX -- {args:docs}"
+envs.docs.extra-dependencies = [
   # Install cellarium-ml from git for docs (see note about PyPI version above)
   "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git",
 ]
-
-# Test the lowest and highest supported Python versions with normal deps
-[[tool.hatch.envs.hatch-test.matrix]]
-deps = [ "stable" ]
-python = [ "3.11", "3.13" ]
-
-# Test the newest supported Python version also with pre-release deps
-[[tool.hatch.envs.hatch-test.matrix]]
-deps = [ "pre" ]
-python = [ "3.13" ]
-
-[tool.hatch.envs.hatch-test]
-features = [ "dev", "test" ]
-extra-dependencies = [
+envs.hatch-test.features = [ "dev", "test" ]
+envs.hatch-test.extra-dependencies = [
   # Install cellarium-ml from git for tests (see note about PyPI version above)
   "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git",
 ]
-
-[tool.hatch.envs.hatch-test.overrides]
+envs.hatch-test.matrix = [
+  # Test the lowest and highest supported Python versions with normal deps
+  { deps = [ "stable" ], python = [ "3.11", "3.13" ] },
+  # Test the newest supported Python version also with pre-release deps
+  { deps = [ "pre" ], python = [ "3.13" ] },
+]
 # If the matrix variable `deps` is set to "pre",
 # set the environment variable `UV_PRERELEASE` to "allow".
-matrix.deps.env-vars = [
+envs.hatch-test.overrides.matrix.deps.env-vars = [
   { key = "UV_PRERELEASE", value = "allow", if = [ "pre" ] },
 ]
-
-[tool.hatch.build.targets.sdist]
-packages = [ "src/scldm" ] # this is needed to avoid packaging the entire repo in the sdist
-
-[tool.hatch.build.targets.wheel]
-packages = [ "src/scldm" ]
+metadata.allow-direct-references = true
+version.source = "vcs"
 
 [tool.ruff]
 line-length = 120
 src = [ "src" ]
 extend-include = [ "*.ipynb" ]
-
 format.docstring-code-format = true
-
 lint.select = [
   "B",      # flake8-bugbear
   "BLE",    # flake8-blind-except
@@ -180,19 +159,19 @@ lint.per-file-ignores."docs/notebooks/*" = [ "B", "C4", "D", "E" ]
 lint.per-file-ignores."tests/*" = [ "D", "F" ]
 lint.pydocstyle.convention = "numpy"
 
-[tool.pytest.ini_options]
-testpaths = [ "tests" ]
-xfail_strict = true
-addopts = [
+[tool.pytest]
+ini_options.testpaths = [ "tests" ]
+ini_options.xfail_strict = true
+ini_options.addopts = [
   "--import-mode=importlib", # allow using test files with same name
 ]
 
-[tool.coverage.run]
-source = [ "scldm" ]
-patch = [ "subprocess" ]
-omit = [
+[tool.coverage]
+run.omit = [
   "**/test_*.py",
 ]
+run.patch = [ "subprocess" ]
+run.source = [ "scldm" ]
 
 [tool.cruft]
 skip = [

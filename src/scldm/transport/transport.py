@@ -187,9 +187,8 @@ class Transport:
     ):
         """Member function for obtaining score of x_t = alpha_t * x + sigma_t * eps."""
         if self.model_type == ModelType.NOISE:
-            score_fn = (
-                lambda x, t, model, **kwargs: model(x, t, **kwargs)
-                / -self.path_sampler.compute_sigma_t(path.expand_t_like_x(t, x))[0]
+            score_fn = lambda x, t, model, **kwargs: (
+                model(x, t, **kwargs) / -self.path_sampler.compute_sigma_t(path.expand_t_like_x(t, x))[0]
             )
         elif self.model_type == ModelType.SCORE:
             score_fn = lambda x, t, model, **kwagrs: model(x, t, **kwagrs)
@@ -230,8 +229,8 @@ class Sampler:
             diffusion = self.transport.path_sampler.compute_diffusion(x, t, form=diffusion_form, norm=diffusion_norm)
             return diffusion
 
-        sde_drift = lambda x, t, model, **kwargs: self.drift(x, t, model, **kwargs) + diffusion_fn(x, t) * self.score(
-            x, t, model, **kwargs
+        sde_drift = lambda x, t, model, **kwargs: (
+            self.drift(x, t, model, **kwargs) + diffusion_fn(x, t) * self.score(x, t, model, **kwargs)
         )
 
         sde_diffusion = diffusion_fn
@@ -249,18 +248,18 @@ class Sampler:
         if last_step is None:
             last_step_fn = lambda x, t, model, **model_kwargs: x
         elif last_step == "Mean":
-            last_step_fn = (
-                lambda x, t, model, **model_kwargs: x + sde_drift(x, t, model, **model_kwargs) * last_step_size
+            last_step_fn = lambda x, t, model, **model_kwargs: (
+                x + sde_drift(x, t, model, **model_kwargs) * last_step_size
             )
         elif last_step == "Tweedie":
             alpha = self.transport.path_sampler.compute_alpha_t  # simple aliasing; the original name was too long
             sigma = self.transport.path_sampler.compute_sigma_t
-            last_step_fn = lambda x, t, model, **model_kwargs: x / alpha(t)[0][0] + (sigma(t)[0][0] ** 2) / alpha(t)[0][
-                0
-            ] * self.score(x, t, model, **model_kwargs)
+            last_step_fn = lambda x, t, model, **model_kwargs: (
+                x / alpha(t)[0][0] + (sigma(t)[0][0] ** 2) / alpha(t)[0][0] * self.score(x, t, model, **model_kwargs)
+            )
         elif last_step == "Euler":
-            last_step_fn = (
-                lambda x, t, model, **model_kwargs: x + self.drift(x, t, model, **model_kwargs) * last_step_size
+            last_step_fn = lambda x, t, model, **model_kwargs: (
+                x + self.drift(x, t, model, **model_kwargs) * last_step_size
             )
         else:
             raise NotImplementedError()
