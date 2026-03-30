@@ -1,31 +1,32 @@
 # Training Benchmarks
 
 Resource usage for VAE training across datasets, measured on 8x A100-80GB GPUs with DDP.
-Data sourced from wandb project [scg-vae/likelihood_vae_long](https://wandb.ai/scg-vae/likelihood_vae_long) (3 seeds per configuration: 12345, 24123, 37329).
+Data sourced from wandb projects [scg-vae/likelihood_vae_long](https://wandb.ai/scg-vae/likelihood_vae_long) and [scg-vae/dentate_gyrus_ae](https://wandb.ai/scg-vae/dentate_gyrus_ae).
 
 ## Gaussian Decoder
 
 | Dataset | Time 8xA100 (h) | Time 1xA100 (h) | Peak Mem/GPU (GB) |
 |---|---|---|---|
-| czb_cd4_naive_holdout | 5.40 ± 0.01 | 43.2 ± 0.1 | 5.92 |
-| dentate_gyrus | 0.30 ± 0.00 | 2.4 ± 0.0 | 28.97 |
-| hlca | 17.01 ± 0.11 | 136.1 ± 0.9 | 49.59 |
-| replogle | 2.91 ± 0.02 | 23.3 ± 0.2 | 5.92 |
-| tabula_muris | 14.61 ± 0.19 | 116.9 ± 1.5 | 34.10 |
+| czb_cd4_naive_holdout | 5.40 ± 0.01 | 39.2 | 5.92 |
+| dentate_gyrus | 0.30 ± 0.00 | 2.17 ± 0.00 | 32.5 |
+| hlca | 17.01 ± 0.11 | 123.4 | 49.59 |
+| replogle | 2.91 ± 0.02 | 21.1 | 5.92 |
+| tabula_muris | 14.61 ± 0.19 | 106.0 | 34.10 |
 
 ## Negative Binomial (Shared Theta) Decoder
 
 | Dataset | Time 8xA100 (h) | Time 1xA100 (h) | Peak Mem/GPU (GB) |
 |---|---|---|---|
-| czb_cd4_naive_holdout | 5.94 ± 0.04 | 47.5 ± 0.3 | 5.83 |
-| dentate_gyrus | 0.30 ± 0.00 | 2.4 ± 0.0 | 28.21 |
-| hlca | 16.97 ± 0.15 | 135.7 ± 1.2 | 44.72 |
-| replogle | 3.19 ± 0.04 | 25.5 ± 0.3 | 5.83 |
-| tabula_muris | 14.50 ± 0.28 | 116.0 ± 2.2 | 33.18 |
+| czb_cd4_naive_holdout | 5.94 ± 0.04 | 43.1 | 5.83 |
+| dentate_gyrus | 0.30 ± 0.00 | 2.17 ± 0.00 | 32.5 |
+| hlca | 16.97 ± 0.15 | 123.1 | 44.72 |
+| replogle | 3.19 ± 0.04 | 23.1 | 5.83 |
+| tabula_muris | 14.50 ± 0.28 | 105.2 | 33.18 |
 
 ## Notes
 
-- All values reported as mean ± std across 3 random seeds.
-- 1xA100 time is estimated by linear scaling (wall time x 8) from the 8-GPU DDP runs.
-- Peak memory is per-GPU (all 8 GPUs show identical allocation in DDP).
+- 8xA100 values: mean ± std across 3 random seeds (12345, 24123, 37329).
+- **dentate_gyrus 1xA100**: measured directly from single-GPU runs ([scg-vae/dentate_gyrus_ae](https://wandb.ai/scg-vae/dentate_gyrus_ae), n_embed=128, 3 seeds). Memory is also from 1-GPU runs.
+- **Other datasets 1xA100**: estimated using a 7.25x scaling factor derived from comparing 8-GPU vs actual 1-GPU dentate_gyrus runs (vs naive 8x linear scaling).
+- Peak memory for non-dentate datasets is per-GPU from 8-GPU DDP runs (actual 1-GPU memory would be higher due to full batch on a single device).
 - GPU type: NVIDIA A100-80GB.
