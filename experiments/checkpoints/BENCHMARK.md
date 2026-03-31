@@ -22,7 +22,7 @@ Training: 500 epochs, batch_size=128, AdamWLegacy lr=1e-3, 3-fold KFold on train
 
 Architecture: `EncoderScvi` (2-layer MLP) → `GaussianLinearLayer` → `DecoderScvi` (2-layer MLP) → `NegativeBinomialLinearLayer` (shared theta). n_hidden=2048, n_latent=2048.
 
-| Fold | RE (val_llh) | PCC | MSE |
+| Fold | RE (test_llh) | PCC | MSE |
 |------|-------------|-----|-----|
 | 0 | 5539.7 | 0.0590 | 0.3677 |
 | 1 | 5533.9 | 0.0578 | 0.3657 |
@@ -36,7 +36,7 @@ Script: `experiments/scripts/train_cv_scvi.py`
 
 Architecture: Set-Transformer `Encoder` → `Decoder` → `NegativeBinomialTransformerLayer` (shared theta). n_inducing_points=128, n_embed=128, n_embed_latent=16, n_layer=2, n_head=4. Latent dim = 128 × 16 = 2048. No KL term.
 
-| Fold | RE (val_llh) | PCC | MSE |
+| Fold | RE (test_llh) | PCC | MSE |
 |------|-------------|-----|-----|
 | 0 | 4380.8 | 0.2717 | 0.2792 |
 | 1 | 4455.2 | 0.2652 | 0.2806 |
