@@ -41,3 +41,4 @@ outputs/
 checkpoints/
 csv_logger/
 wandb_logger/
+.claude
