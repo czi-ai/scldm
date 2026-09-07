@@ -82,22 +82,24 @@ urls.Source = "https://github.com/czi-ai/scldm"
 scripts.scldm-download-artifacts = "scldm.download_artifacts:main"
 
 [tool.hatch]
+version.source = "vcs"
+metadata.allow-direct-references = true
 build.hooks.vcs.version-file = "src/scldm/_version.py"
+build.targets.wheel.packages = [ "src/scldm" ]
 build.targets.sdist.packages = [
   "src/scldm",
 ]  # this is needed to avoid packaging the entire repo in the sdist
-build.targets.wheel.packages = [ "src/scldm" ]
 envs.default.installer = "uv"
 envs.default.features = [ "dev" ]
 envs.docs.installer = "uv"
 envs.docs.features = [ "docs" ]
-envs.docs.scripts.build = "sphinx-build -M html docs docs/_build -W {args}"
-envs.docs.scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
-envs.docs.scripts.clean = "git clean -fdX -- {args:docs}"
 envs.docs.extra-dependencies = [
   # Install cellarium-ml from git for docs (see note about PyPI version above)
   "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git",
 ]
+envs.docs.scripts.build = "sphinx-build -M html docs docs/_build -W {args}"
+envs.docs.scripts.clean = "git clean -fdX -- {args:docs}"
+envs.docs.scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
 envs.hatch-test.features = [ "dev", "test" ]
 envs.hatch-test.extra-dependencies = [
   # Install cellarium-ml from git for tests (see note about PyPI version above)
@@ -114,8 +116,6 @@ envs.hatch-test.matrix = [
 envs.hatch-test.overrides.matrix.deps.env-vars = [
   { key = "UV_PRERELEASE", value = "allow", if = [ "pre" ] },
 ]
-metadata.allow-direct-references = true
-version.source = "vcs"
 
 [tool.ruff]
 line-length = 120
@@ -161,17 +161,17 @@ lint.pydocstyle.convention = "numpy"
 
 [tool.pytest]
 ini_options.testpaths = [ "tests" ]
-ini_options.xfail_strict = true
 ini_options.addopts = [
   "--import-mode=importlib", # allow using test files with same name
 ]
+ini_options.xfail_strict = true
 
 [tool.coverage]
+run.source = [ "scldm" ]
 run.omit = [
   "**/test_*.py",
 ]
 run.patch = [ "subprocess" ]
-run.source = [ "scldm" ]
 
 [tool.cruft]
 skip = [
