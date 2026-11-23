@@ -6,7 +6,7 @@ module:
   vae_as_tokenizer:
     train: false
     load_from_checkpoint:
-      ckpt_path: null  # Set in ldm_training.yaml
+      ckpt_path: null # Set in ldm_training.yaml
       job_name: null
       epoch: null
   diffusion_model:

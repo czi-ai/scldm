@@ -41,5 +41,5 @@ training:
       name: ${experiment_name}
     wandb:
       project: scldm_vae
-      entity: scg-vae  # TODO: Change to your wandb entity/organization
+      entity: scg-vae # TODO: Change to your wandb entity/organization
       save_dir: ${paths.base_experiment_path}/wandb_logger

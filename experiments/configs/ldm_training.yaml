@@ -41,7 +41,7 @@ training:
       name: ${experiment_name}
     wandb:
       project: scldm_ldm
-      entity: scg-vae  # TODO: Change to your wandb entity
+      entity: scg-vae # TODO: Change to your wandb entity
       save_dir: ${paths.base_experiment_path}/wandb_logger
 
 model:
@@ -52,6 +52,6 @@ model:
         # TODO: Update path to your VAE checkpoint directory
         ckpt_path: /work/scldm/experiments/experiments/checkpoints
         job_name: vae_dentate_gyrus
-        epoch: null  # null means use last.ckpt
+        epoch: null # null means use last.ckpt
   batch_size: 128
   test_batch_size: 128

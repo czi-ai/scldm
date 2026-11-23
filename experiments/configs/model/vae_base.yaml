@@ -1,4 +1,3 @@
-
 module:
   _target_: scldm.models.VAE
   vae_model:
