@@ -1,4 +1,3 @@
-
 datamodule:
   _target_: scldm.datamodule.DataModule
   train_adata_path: null # ${paths.dataset_paths.${datamodule.dataset}.train}

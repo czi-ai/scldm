@@ -32,7 +32,6 @@ pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-
 uv pip install scldm "cellarium-ml @ git+https://github.com/cellarium-ai/cellarium-ml.git"
 ```
 
-
 ### Note On Dependencies
 
 #### Cellarium-ML
@@ -123,6 +122,7 @@ python scripts/train.py \
 ```
 
 Key config overrides:
+
 - `paths.base_data_path`: Path to dataset directory
 - `experiment_name`: Name for checkpoints/logs
 - `datamodule.dataset`: Dataset name (e.g., `dentate_gyrus`)
@@ -153,6 +153,7 @@ python scripts/train_ldm.py \
 ```
 
 Key config overrides:
+
 - `model.module.vae_as_tokenizer.load_from_checkpoint.ckpt_path`: Directory containing VAE checkpoint
 - `model.module.vae_as_tokenizer.load_from_checkpoint.job_name`: VAE experiment name
 - `model.module.vae_as_tokenizer.train`: Set to `true` to fine-tune VAE (default: `false`)
@@ -177,6 +178,7 @@ python scripts/inference.py \
 ```
 
 Key config overrides:
+
 - `ckpt_file`: Path to LDM checkpoint
 - `config_file`: Path to saved config.yaml from training
 - `model.module.generation_args.guidance_weight`: Classifier-free guidance weight

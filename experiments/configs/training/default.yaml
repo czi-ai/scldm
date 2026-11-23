@@ -28,7 +28,7 @@ logger:
     _partial_: true
     save_dir: ${paths.base_experiment_path}/wandb_logger
     project: ${experiment_name}
-    entity: scg-vae  # TODO: Change to your wandb entity/organization
+    entity: scg-vae # TODO: Change to your wandb entity/organization
     name: null
     job_type: sweep
     id: null
@@ -36,9 +36,9 @@ logger:
     resume_from: null
 callbacks:
   lr_monitor:
-      _target_: pytorch_lightning.callbacks.LearningRateMonitor
-      logging_interval: step
-      log_weight_decay: true
+    _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: step
+    log_weight_decay: true
   model_checkpoints:
     _target_: pytorch_lightning.callbacks.ModelCheckpoint
     dirpath: ${paths.base_experiment_path}/checkpoints
